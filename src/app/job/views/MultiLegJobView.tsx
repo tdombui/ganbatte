@@ -179,7 +179,23 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
         const partRate = 5
         const partCount = job.parts?.length || 0
         const distanceMiles = route.distanceMeters / 1609.34
-        return (baseRate + distanceMiles * perMile + partCount * partRate).toFixed(2)
+        
+        // Calculate base price
+        const basePrice = baseRate + distanceMiles * perMile + partCount * partRate
+        
+        // Apply 25% discount for advance bookings (24+ hours)
+        let finalPrice = basePrice
+        if (job.deadline) {
+            const deadlineTime = new Date(job.deadline).getTime()
+            const currentTime = new Date().getTime()
+            const hoursUntilDeadline = (deadlineTime - currentTime) / (1000 * 60 * 60)
+            
+            if (hoursUntilDeadline >= 24) {
+                finalPrice = basePrice * 0.75 // 25% discount
+            }
+        }
+        
+        return finalPrice.toFixed(2)
     }
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -299,7 +315,7 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
                 <ul className="space-y-2 bg-white/5 p-4 rounded-xl">
                     <li><strong>Distance:</strong> {getDistanceMiles()} mi</li>
                     <li><strong>Deadline:</strong> {formatDeadline(job.deadline || '')}</li>
-                    <li><strong>Estimate:</strong> ${getPrice()}</li>
+                    <li><strong>Estimate:</strong> ${getPrice()}{job.deadline && (new Date(job.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60) >= 24 ? ' (25% advance booking discount applied)' : ''}</li>
                     <li><strong>Status:</strong> {job.status || 'Pending'}</li>
                 </ul>
             )}

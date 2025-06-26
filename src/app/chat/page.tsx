@@ -233,163 +233,232 @@ export default function ChatPage() {
     )
 
     return (
-        <div className="max-w-xl mx-auto py-8">
-            <div className="flex justify-between items-center mb-6">
-                <header className="text-2xl font-medium font-sans">Ganbatte Part Sprinter</header>
-                <button
-                    onClick={() => setViewMode((prev) => (prev === 'chat' ? 'form' : 'chat'))}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-                >
-                    {viewMode === 'chat' ? 'Create Multi-Trip Job' : '← Single Trip'}
-                </button>
+        <div className="max-w-4xl mx-auto py-8">
+            {/* Header with Navigation */}
+            <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                    <header className="text-3xl font-bold font-sans">Ganbatte Part Sprinter</header>
+                    <span className="text-emerald-400 text-sm bg-emerald-900/20 px-3 mt-1 py-1 rounded-full">AI-Powered Parts Delivery</span>
+                </div>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setViewMode((prev) => (prev === 'chat' ? 'form' : 'chat'))}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+                    >
+                        {viewMode === 'chat' ? 'Create Multi-Trip Job' : '← Single Trip'}
+                    </button>
+                </div>
             </div>
 
             {viewMode === 'chat' && (
                 <>
-                    <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-6 bg-neutral-950 text-white">
-                        {messages.map((msg, idx) => {
-                            const isUser = msg.startsWith('user:')
-                            const content = msg.replace(/^(user|ai):/, '')
-                            
-                            return (
-                                <div
-                                    key={idx}
-                                    className={`mb-4 max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}
-                                >
-                                    <div className={`relative px-4 py-2 rounded-2xl ${
-                                        isUser 
-                                            ? 'bg-blue-500 text-white rounded-br-md' 
-                                            : 'bg-gray-600 text-white rounded-bl-md'
-                                    }`}>
-                                        {content.includes('/job/') ? (
-                                            <span
-                                                dangerouslySetInnerHTML={{
-                                                    __html: content.replace(
-                                                        /(\/job\/[a-z0-9\-]+)/gi,
-                                                        `<a href="$1" class="underline text-blue-200">$1</a>`
-                                                    ),
-                                                }}
-                                            />
-                                        ) : (
-                                            <div 
-                                                className="whitespace-pre-wrap"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: parseMarkdownBold(content)
-                                                }}
-                                            />
-                                        )}
-                                    </div>
+                    {/* Chat Interface */}
+                    <div className="grid lg:grid-cols-3 gap-6">
+                        {/* Main Chat Area */}
+                        <div className="lg:col-span-2">
+                            <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-6 bg-neutral-950 text-white border border-neutral-800">
+                                {messages.map((msg, idx) => {
+                                    const isUser = msg.startsWith('user:')
+                                    const content = msg.replace(/^(user|ai):/, '')
                                     
-                                    {/* Message tail */}
-                                    <div className={`w-3 h-3 ${
-                                        isUser 
-                                            ? 'ml-auto bg-blue-500 rounded-br-full' 
-                                            : 'mr-auto bg-gray-600 rounded-bl-full'
-                                    }`} style={{ marginTop: '-12px' }}></div>
-                                </div>
-                            )
-                        })}
-                        
-                        {/* Confirmation buttons */}
-                        {awaitingConfirmation && (
-                            <div className="mr-auto max-w-[80%] mb-4">
-                                <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
-                                    <div className="flex gap-3 justify-center">
-                                        <button
-                                            onClick={() => handleConfirmation(true)}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`mb-4 max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}
                                         >
-                                            <span className="text-lg">✅</span>
-                                            <span>Yes</span>
-                                        </button>
-                                        <button
-                                            onClick={() => handleConfirmation(false)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
-                                        >
-                                            <span className="text-lg">❌</span>
-                                            <span>No</span>
-                                        </button>
+                                            <div className={`relative px-4 py-2 rounded-2xl ${
+                                                isUser 
+                                                    ? 'bg-blue-500 text-white rounded-br-md' 
+                                                    : 'bg-gray-600 text-white rounded-bl-md'
+                                            }`}>
+                                                {content.includes('/job/') ? (
+                                                    <span
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: content.replace(
+                                                                /(\/job\/[a-z0-9\-]+)/gi,
+                                                                `<a href="$1" class="underline text-blue-200">$1</a>`
+                                                            ),
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="whitespace-pre-wrap"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: parseMarkdownBold(content)
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+                                            
+                                            {/* Message tail */}
+                                            <div className={`w-3 h-3 ${
+                                                isUser 
+                                                    ? 'ml-auto bg-blue-500 rounded-br-full' 
+                                                    : 'mr-auto bg-gray-600 rounded-bl-full'
+                                            }`} style={{ marginTop: '-12px' }}></div>
+                                        </div>
+                                    )
+                                })}
+                                
+                                {/* Confirmation buttons */}
+                                {awaitingConfirmation && (
+                                    <div className="mr-auto max-w-[80%] mb-4">
+                                        <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
+                                            <div className="flex gap-3 justify-center">
+                                                <button
+                                                    onClick={() => handleConfirmation(true)}
+                                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
+                                                >
+                                                    <span className="text-lg">✅</span>
+                                                    <span>Yes</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleConfirmation(false)}
+                                                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
+                                                >
+                                                    <span className="text-lg">❌</span>
+                                                    <span>No</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
                                     </div>
-                                </div>
-                                <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
+                                )}
+
+                                {/* Calendar picker */}
+                                {showCalendar && <CalendarPicker />}
+                                
+                                <div ref={chatEndRef} />
                             </div>
-                        )}
 
-                        {/* Calendar picker */}
-                        {showCalendar && <CalendarPicker />}
-                        
-                        <div ref={chatEndRef} />
-                    </div>
-
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault()
-                            const input = e.currentTarget.elements.namedItem('chat') as HTMLInputElement
-                            if (!input.value.trim()) return
-                            handleSend(input.value)
-                            input.value = ''
-                        }}
-                        className="flex gap-2"
-                    >
-                        <input
-                            name="chat"
-                            className="flex-1 px-4 py-3 rounded-full bg-neutral-950"
-                            placeholder="What do you need?"
-                        />
-                        <button
-                            type="submit"
-                            className="bg-emerald-500 text-white px-2 py-2 rounded-full"
-                        >
-                            <SendHorizonal className="m-1" />
-                        </button>
-                    </form>
-
-                    {loading && <p className="text-sm text-gray-500 mt-2">Parsing job...</p>}
-
-                    {parsedJob && (
-                        <div className="mt-6 border-t border-neutral-800 pt-4">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="font-bold text-lg">Job Overview</h2>
-                                {savedJob?.id && (
-                                    <a
-                                        href={`/job/${savedJob.id}`}
-                                        className="text-sm text-emerald-400 hover:underline"
-                                    >
-                                        View Job Overview →
-                                    </a>
+                            {/* Thinking indicator - always reserves space */}
+                            <div className="h-8 mb-2 flex items-center">
+                                {loading && (
+                                    <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                                        <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Thinking...</span>
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="space-y-3 text-sm bg-white/5 rounded-xl p-4">
-                                <div className="flex flex-col bg-neutral-950 rounded-xl p-4">
-                                    <span className="text-neutral-400 font-bold">Payload</span>
-                                    <span className="font-medium text-white">
-                                        {parsedJob.parts.length
-                                            ? parsedJob.parts.join(', ')
-                                            : 'None specified'}
-                                    </span>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault()
+                                    const input = e.currentTarget.elements.namedItem('chat') as HTMLInputElement
+                                    if (!input.value.trim()) return
+                                    
+                                    // Hide calendar if user is typing manually
+                                    if (showCalendar) {
+                                        setShowCalendar(false)
+                                        setSelectedDateTime('')
+                                    }
+                                    
+                                    handleSend(input.value)
+                                    input.value = ''
+                                }}
+                                className="flex gap-2"
+                            >
+                                <input
+                                    name="chat"
+                                    className="flex-1 px-4 py-3 rounded-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 focus:outline-none"
+                                    placeholder={messages.length === 0 ? "What do you need delivered?" : "Type your message..."}
+                                    onFocus={() => {
+                                        // Hide calendar when user focuses on input
+                                        if (showCalendar) {
+                                            setShowCalendar(false)
+                                            setSelectedDateTime('')
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="submit"
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-full transition-colors"
+                                >
+                                    <SendHorizonal className="m-1" />
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="space-y-6">
+                            {/* Job Overview */}
+                            {parsedJob && (
+                                <div className="bg-neutral-800/50 rounded-xl p-6 border border-neutral-700">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="font-bold text-lg text-white">Job Overview</h2>
+                                        {savedJob?.id && (
+                                            <a
+                                                href={`/job/${savedJob.id}`}
+                                                className="text-sm text-emerald-400 hover:underline"
+                                            >
+                                                View →
+                                            </a>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-3 text-sm">
+                                        <div className="bg-neutral-900/50 rounded-lg p-3">
+                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Payload</span>
+                                            <div className="font-medium text-white mt-1">
+                                                {parsedJob.parts.length
+                                                    ? parsedJob.parts.join(', ')
+                                                    : 'None specified'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-neutral-900/50 rounded-lg p-3">
+                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Pickup</span>
+                                            <div className="font-medium text-white mt-1">
+                                                {parsedJob.pickup || '[not provided]'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-neutral-900/50 rounded-lg p-3">
+                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Dropoff</span>
+                                            <div className="font-medium text-white mt-1">
+                                                {parsedJob.dropoff || '[not provided]'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-neutral-900/50 rounded-lg p-3">
+                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Deadline</span>
+                                            <div className="font-medium text-white mt-1">
+                                                {parsedJob.deadlineDisplay ? `by ${parsedJob.deadlineDisplay}` : 'None specified'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col bg-neutral-950 rounded-xl p-4">
-                                    <span className="text-neutral-400 font-bold">Pickup Location</span>
-                                    <span className="font-medium text-white">
-                                        {parsedJob.pickup || '[not provided]'}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col bg-neutral-950 rounded-xl p-4">
-                                    <span className="text-neutral-400 font-bold">Dropoff Location</span>
-                                    <span className="font-medium text-white">
-                                        {parsedJob.dropoff || '[not provided]'}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col bg-neutral-950 rounded-xl p-4">
-                                    <span className="text-neutral-400 font-bold">Dropoff Time</span>
-                                    <span className="font-medium text-white">
-                                        {parsedJob.deadlineDisplay ? `by ${parsedJob.deadlineDisplay}` : 'None specified'}
-                                    </span>
+                            )}
+
+                            {/* Quick FAQ */}
+                            <div className="bg-neutral-800/50 rounded-xl p-6 border border-neutral-700">
+                                <h3 className="font-bold text-lg text-white mb-4">❓ Quick Help</h3>
+                                <div className="space-y-3 text-sm">
+                                    <details className="group">
+                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                            How does this work?
+                                        </summary>
+                                        <p className="text-neutral-400 mt-2 pl-4">
+                                            Just tell me what you need delivered, where to pick it up, and where to drop it off. I&apos;ll create a job and connect you with a driver.
+                                        </p>
+                                    </details>
+                                    <details className="group">
+                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                            How fast is delivery?
+                                        </summary>
+                                        <p className="text-neutral-400 mt-2 pl-4">
+                                            Most deliveries are completed within 2-4 hours. Urgent deliveries can be arranged for faster service.
+                                        </p>
+                                    </details>
+                                    <details className="group">
+                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                            Can I track my delivery?
+                                        </summary>
+                                        <p className="text-neutral-400 mt-2 pl-4">
+                                            Yes! Once your job is active, you can track the driver&apos;s location in real-time and receive photo proof of delivery.
+                                        </p>
+                                    </details>
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </>
             )}
 
