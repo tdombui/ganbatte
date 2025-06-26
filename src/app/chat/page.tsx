@@ -19,6 +19,8 @@ export default function ChatPage() {
     const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
     const [lastQuestion, setLastQuestion] = useState<'pickup' | 'dropoff' | 'deadline' | null>(null)
     const [savedJob, setSavedJob] = useState<{ id: string } | null>(null)
+    const [showCalendar, setShowCalendar] = useState(false)
+    const [selectedDateTime, setSelectedDateTime] = useState('')
     const chatEndRef = useRef<HTMLDivElement | null>(null)
 
     useEffect(() => {
@@ -93,7 +95,10 @@ export default function ChatPage() {
 
                 if (data.message.includes('pickup')) setLastQuestion('pickup')
                 else if (data.message.includes('dropoff')) setLastQuestion('dropoff')
-                else if (data.message.toLowerCase().includes('when')) setLastQuestion('deadline')
+                else if (data.message.toLowerCase().includes('when')) {
+                    setLastQuestion('deadline')
+                    setShowCalendar(true)
+                }
 
                 setParsedJob(null)
                 setAwaitingConfirmation(false)
@@ -166,6 +171,66 @@ export default function ChatPage() {
         }
         setAwaitingConfirmation(false)
     }
+
+    const handleCalendarSubmit = () => {
+        if (selectedDateTime) {
+            const date = new Date(selectedDateTime)
+            const formattedDate = date.toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            })
+            
+            setMessages((prev) => [...prev, `user:${formattedDate}`])
+            setShowCalendar(false)
+            setSelectedDateTime('')
+            
+            // Process the date input
+            setTimeout(() => {
+                handleSend(formattedDate)
+            }, 100)
+        }
+    }
+
+    const CalendarPicker = () => (
+        <div className="mr-auto max-w-[80%] mb-4">
+            <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
+                <div className="space-y-3">
+                    <div className="text-center font-medium">Select Date & Time</div>
+                    <input
+                        type="datetime-local"
+                        value={selectedDateTime}
+                        onChange={(e) => setSelectedDateTime(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-800 rounded-lg text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
+                        min={new Date().toISOString().slice(0, 16)}
+                    />
+                    <div className="flex gap-2 justify-center">
+                        <button
+                            onClick={handleCalendarSubmit}
+                            disabled={!selectedDateTime}
+                            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                            Set Deadline
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowCalendar(false)
+                                setSelectedDateTime('')
+                            }}
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
+        </div>
+    )
 
     return (
         <div className="max-w-xl mx-auto py-8">
@@ -250,6 +315,9 @@ export default function ChatPage() {
                                 <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
                             </div>
                         )}
+
+                        {/* Calendar picker */}
+                        {showCalendar && <CalendarPicker />}
                         
                         <div ref={chatEndRef} />
                     </div>

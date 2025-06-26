@@ -72,7 +72,7 @@ Return a JSON object with:
             return NextResponse.json({
                 job: parsed,
                 needsClarification: true,
-                message: `When do you need this by? (e.g., June 25, 5PM)`
+                message: `When do you need this by? You can either:\n\n1. Type your deadline (e.g., "June 25, 5PM")\n2. Use the calendar below to select date and time`
             })
         }
 
