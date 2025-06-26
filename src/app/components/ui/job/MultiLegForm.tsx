@@ -112,7 +112,7 @@ export default function MultiLegForm() {
             <Toast message={toast} onClose={() => setToast('')} />
             {/* Parts Section */}
             <div>
-                <h2 className="text-lg font-bold text-white mb-2">Parts</h2>
+                <h2 className="text-lg font-bold text-white mb-2">Parts / Payload</h2>
                 <div className="flex gap-2 mb-2">
                     <input
                         type="text"

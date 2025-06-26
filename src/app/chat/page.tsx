@@ -234,14 +234,13 @@ export default function ChatPage() {
 
     return (
         <div className="max-w-xl mx-auto py-8">
-            <header className="text-2xl font-medium font-sans mb-3">Ganbatte Part Sprinter</header>
-
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-6">
+                <header className="text-2xl font-medium font-sans">Ganbatte Part Sprinter</header>
                 <button
                     onClick={() => setViewMode((prev) => (prev === 'chat' ? 'form' : 'chat'))}
-                    className="text-sm text-emerald-400 hover:underline"
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
                 >
-                    {viewMode === 'chat' ? 'Create multi-trip job →' : '← Back to single trip job'}
+                    {viewMode === 'chat' ? 'Create Multi-Trip Job' : '← Single Trip'}
                 </button>
             </div>
 
