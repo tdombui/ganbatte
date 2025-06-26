@@ -5,13 +5,13 @@ import { notFound } from 'next/navigation'
 import JobClientView from '../JobClientView'
 
 interface JobPageProps {
-    params: {
+    params: Promise<{
         slug: string
-    }
+    }>
 }
 
 export default async function JobPageServer({ params }: JobPageProps) {
-    const { slug } = params
+    const { slug } = await params
 
     const { data: job, error } = await supabase
         .from('jobs')

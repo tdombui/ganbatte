@@ -2,12 +2,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+interface Leg {
+    part: string
+    pickup: string
+    dropoff: string
+}
+
+interface EnrichedLeg extends Leg {
+    pickup_lat: number | null
+    pickup_lng: number | null
+    dropoff_lat: number | null
+    dropoff_lng: number | null
+}
+
+interface RouteLeg {
+    distance?: { value: number }
+    duration?: { value: number }
+}
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // only use on server
 )
 
-async function fetchMultiLegRouteInfo(legs: any[]) {
+async function fetchMultiLegRouteInfo(legs: Leg[]) {
     if (!legs || legs.length < 1) return { distance_meters: null, duration_seconds: null }
     const origin = legs[0].pickup
     const destination = legs[legs.length - 1].dropoff
@@ -16,8 +34,8 @@ async function fetchMultiLegRouteInfo(legs: any[]) {
     const res = await fetch(url)
     const data = await res.json()
     const routeLegs = data.routes?.[0]?.legs || []
-    const totalDistance = routeLegs.reduce((sum: number, l: any) => sum + (l.distance?.value || 0), 0)
-    const totalDuration = routeLegs.reduce((sum: number, l: any) => sum + (l.duration?.value || 0), 0)
+    const totalDistance = routeLegs.reduce((sum: number, l: RouteLeg) => sum + (l.distance?.value || 0), 0)
+    const totalDuration = routeLegs.reduce((sum: number, l: RouteLeg) => sum + (l.duration?.value || 0), 0)
     return {
         distance_meters: totalDistance || null,
         duration_seconds: totalDuration || null,
@@ -39,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const enrichedLegs = await Promise.all(
-        legs.map(async (leg: any) => {
+        legs.map(async (leg: Leg): Promise<EnrichedLeg> => {
             const pickupGeo = await geocodeAddress(leg.pickup)
             const dropoffGeo = await geocodeAddress(leg.dropoff)
 

@@ -1,6 +1,15 @@
 // src/app/api/getAddressSuggestions/route.ts
 import { NextResponse } from 'next/server'
 
+interface GooglePlacesResult {
+    place_id: string
+    description: string
+    structured_formatting: {
+        main_text: string
+        secondary_text: string
+    }
+}
+
 export async function POST(req: Request) {
     const { input } = await req.json()
 
@@ -17,6 +26,11 @@ export async function POST(req: Request) {
         return NextResponse.json([], { status: 200 })
     }
 
-    const suggestions = data.predictions.map((p: any) => p.description)
+    const suggestions = data.predictions?.map((prediction: GooglePlacesResult) => ({
+        id: prediction.place_id,
+        text: prediction.description,
+        mainText: prediction.structured_formatting.main_text,
+        secondaryText: prediction.structured_formatting.secondary_text,
+    })) || []
     return NextResponse.json(suggestions)
 }

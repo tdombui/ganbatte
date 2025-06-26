@@ -32,7 +32,7 @@ Return a JSON object with:
             temperature: 0.2,
         })
 
-        let content = completion.choices[0].message.content || ''
+        const content = completion.choices[0].message.content || ''
         const cleanJson = content
             .replace(/^```json\s*/, '')
             .replace(/^```\s*/, '')

@@ -2,8 +2,8 @@ export interface JobLeg {
     part: string;
     pickup: string
     dropoff: string
-    pickup_validated: boolean
-    dropoff_validated: boolean
+    pickup_validated?: boolean
+    dropoff_validated?: boolean
     pickup_lat: number | null
     pickup_lng: number | null
     dropoff_lat: number | null
