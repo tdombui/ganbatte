@@ -28,12 +28,12 @@ export default function ChatPage() {
         else if (lastQuestion === 'dropoff') overrideField = 'dropoff'
         else if (lastQuestion === 'deadline') overrideField = 'deadline'
 
-        setMessages((prev) => [...prev, `😀 ${message}`])
+        setMessages((prev) => [...prev, `user:${message}`])
 
         if (awaitingConfirmation && parsedJob) {
             const response = message.toLowerCase()
             if (['yes', 'y', 'yup', 'ye', 'yee'].includes(response)) {
-                setMessages((prev) => [...prev, `🤖 Saving your job...`])
+                setMessages((prev) => [...prev, `ai:Saving your job...`])
                 try {
                     const res = await fetch('/api/createJob', {
                         method: 'POST',
@@ -46,21 +46,21 @@ export default function ChatPage() {
                         setSavedJob(job)
                         setMessages((prev) => [
                             ...prev,
-                            `🤖 Job booked. View your job here: /job/${job.id}`,
+                            `ai:Job booked. View your job here: /job/${job.id}`,
                         ])
                     } else {
-                        setMessages((prev) => [...prev, `❌ Failed to save job.`])
+                        setMessages((prev) => [...prev, `ai:Failed to save job.`])
                     }
                 } catch (err) {
                     console.error('❌ saveJob error:', err)
-                    setMessages((prev) => [...prev, `❌ Failed to save job.`])
+                    setMessages((prev) => [...prev, `ai:Failed to save job.`])
                 }
                 setAwaitingConfirmation(false)
                 return
             } else if (['no', 'n', 'nah'].includes(response)) {
                 setMessages((prev) => [
                     ...prev,
-                    `🤖 Okay, let’s try again. Please retype your request.`,
+                    `ai:Okay, let's try again. Please retype your request.`,
                 ])
                 setParsedJob(null)
                 setAwaitingConfirmation(false)
@@ -84,7 +84,7 @@ export default function ChatPage() {
             const data = await res.json()
 
             if (data.needsClarification && data.message) {
-                setMessages((prev) => [...prev, `🤖 ${data.message}`])
+                setMessages((prev) => [...prev, `ai:${data.message}`])
 
                 if (data.message.includes('pickup')) setLastQuestion('pickup')
                 else if (data.message.includes('dropoff')) setLastQuestion('dropoff')
@@ -99,22 +99,67 @@ export default function ChatPage() {
                 setParsedJob(data.job)
                 setLastQuestion(null)
 
-                const summary = `Got it! You need: ${data.job.parts.join(', ') || '[no parts found]'} picked up from "${data.job.pickup || '[pickup missing]'}" and delivered to "${data.job.dropoff || '[dropoff missing]'}"${data.job.deadline ? ' by ' + formatDeadline(data.job.deadline) : ''}.`
+                // Format the response with better structure
+                const partsList = data.job.parts.length > 0 
+                    ? data.job.parts.map((part: string) => `• ${part}`).join('\n')
+                    : '• [no parts found]'
+                
+                const pickupAddress = data.job.pickup || '[pickup missing]'
+                const dropoffAddress = data.job.dropoff || '[dropoff missing]'
+                const deadlineText = data.job.deadline ? formatDeadline(data.job.deadline) : null
+
+                const summary = `Got it! You need:\n\n${partsList}\n\n📌 Picked up from: ${pickupAddress}\n📌 Delivered to: ${dropoffAddress}${deadlineText ? `\n\nDue by: ${deadlineText}` : ''}`
 
                 setMessages((prev) => [
                     ...prev,
-                    `🤖 ${summary}`,
-                    '🤖 Does this look right? (Yes/No)',
+                    `ai:${summary}`,
+                    'ai:Does this look right?',
                 ])
 
                 setAwaitingConfirmation(true)
             }
         } catch (err) {
             console.error('❌ parseJob error:', err)
-            setMessages((prev) => [...prev, '❌ Internal server error.'])
+            setMessages((prev) => [...prev, 'ai:Internal server error.'])
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleConfirmation = async (confirmed: boolean) => {
+        if (!parsedJob) return
+
+        if (confirmed) {
+            setMessages((prev) => [...prev, `ai:Saving your job...`])
+            try {
+                const res = await fetch('/api/createJob', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parsedJob),
+                })
+
+                if (res.ok) {
+                    const { job } = await res.json()
+                    setSavedJob(job)
+                    setMessages((prev) => [
+                        ...prev,
+                        `ai:Job booked. View your job here: /job/${job.id}`,
+                    ])
+                } else {
+                    setMessages((prev) => [...prev, `ai:Failed to save job.`])
+                }
+            } catch (err) {
+                console.error('❌ saveJob error:', err)
+                setMessages((prev) => [...prev, `ai:Failed to save job.`])
+            }
+        } else {
+            setMessages((prev) => [
+                ...prev,
+                `ai:Okay, let's try again. Please retype your request.`,
+            ])
+            setParsedJob(null)
+        }
+        setAwaitingConfirmation(false)
     }
 
     return (
@@ -133,28 +178,69 @@ export default function ChatPage() {
             {viewMode === 'chat' && (
                 <>
                     <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-6 bg-neutral-950 text-white">
-                        {messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className={`mb-4 max-w-[80%] whitespace-pre-wrap px-4 py-2 rounded-xl ${msg.startsWith('😀')
-                                    ? 'ml-auto bg-emerald-600 text-white text-left'
-                                    : 'mr-auto bg-neutral-800 text-white text-left'
-                                    }`}
-                            >
-                                {msg.includes('/job/') ? (
-                                    <span
-                                        dangerouslySetInnerHTML={{
-                                            __html: msg.replace(
-                                                /(\/job\/[a-z0-9\-]+)/gi,
-                                                `<a href="$1" class="underline text-emerald-400">$1</a>`
-                                            ),
-                                        }}
-                                    />
-                                ) : (
-                                    msg
-                                )}
+                        {messages.map((msg, idx) => {
+                            const isUser = msg.startsWith('user:')
+                            const content = msg.replace(/^(user|ai):/, '')
+                            
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`mb-4 max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}
+                                >
+                                    <div className={`relative px-4 py-2 rounded-2xl ${
+                                        isUser 
+                                            ? 'bg-blue-500 text-white rounded-br-md' 
+                                            : 'bg-gray-600 text-white rounded-bl-md'
+                                    }`}>
+                                        {content.includes('/job/') ? (
+                                            <span
+                                                dangerouslySetInnerHTML={{
+                                                    __html: content.replace(
+                                                        /(\/job\/[a-z0-9\-]+)/gi,
+                                                        `<a href="$1" class="underline text-blue-200">$1</a>`
+                                                    ),
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="whitespace-pre-wrap">{content}</div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Message tail */}
+                                    <div className={`w-3 h-3 ${
+                                        isUser 
+                                            ? 'ml-auto bg-blue-500 rounded-br-full' 
+                                            : 'mr-auto bg-gray-600 rounded-bl-full'
+                                    }`} style={{ marginTop: '-12px' }}></div>
+                                </div>
+                            )
+                        })}
+                        
+                        {/* Confirmation buttons */}
+                        {awaitingConfirmation && (
+                            <div className="mr-auto max-w-[80%] mb-4">
+                                <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
+                                    <div className="flex gap-3 justify-center">
+                                        <button
+                                            onClick={() => handleConfirmation(true)}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
+                                        >
+                                            <span className="text-lg">✅</span>
+                                            <span>Yes</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleConfirmation(false)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
+                                        >
+                                            <span className="text-lg">❌</span>
+                                            <span>No</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
                             </div>
-                        ))}
+                        )}
+                        
                         <div ref={chatEndRef} />
                     </div>
 
@@ -221,7 +307,7 @@ export default function ChatPage() {
                                 <div className="flex flex-col bg-neutral-950 rounded-xl p-4">
                                     <span className="text-neutral-400 font-bold">Dropoff Time</span>
                                     <span className="font-medium text-white">
-                                        by {parsedJob.deadlineDisplay || 'None specified'}
+                                        {parsedJob.deadlineDisplay ? `by ${parsedJob.deadlineDisplay}` : 'None specified'}
                                     </span>
                                 </div>
                             </div>
