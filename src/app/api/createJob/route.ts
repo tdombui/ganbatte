@@ -26,13 +26,14 @@ export async function POST(req: Request) {
 
         // Explicit mapping to match your DB column names
         const insertPayload = {
-            parts: job.parts,
+            parts: job.parts || [],
             pickup: job.pickup,
             dropoff: job.dropoff,
             deadline: job.deadline,
             deadline_display: job.deadlineDisplay,
             distance_meters,
             duration_seconds,
+            status: 'planned', // Set default status
         }
 
         const { data, error } = await supabase.from('jobs').insert([insertPayload]).select()

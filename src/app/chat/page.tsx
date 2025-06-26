@@ -108,7 +108,7 @@ export default function ChatPage() {
                 const dropoffAddress = data.job.dropoff || '[dropoff missing]'
                 const deadlineText = data.job.deadline ? formatDeadline(data.job.deadline) : null
 
-                const summary = `Got it! You need:\n\n${partsList}\n\n📌 Picked up from: ${pickupAddress}\n📌 Delivered to: ${dropoffAddress}${deadlineText ? `\n\nDue by: ${deadlineText}` : ''}`
+                const summary = `Got it! You need:\n\n${partsList}\n\n📌 Picked up from: ${pickupAddress}\n📌 Delivered to: ${dropoffAddress}${deadlineText ? `\n\nDue: ${deadlineText}` : ''}`
 
                 setMessages((prev) => [
                     ...prev,

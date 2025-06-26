@@ -9,6 +9,10 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
     const [isEditing, setIsEditing] = useState(false)
     const [editedJob, setEditedJob] = useState(job)
 
+    // Debug logging to see what we're getting
+    console.log('🔍 Job data received:', job)
+    console.log('🔍 Job parts:', job.parts, 'Type:', typeof job.parts, 'Is array:', Array.isArray(job.parts))
+
     const [route, setRoute] = useState<{
         distanceMeters: number
         duration: number
@@ -18,6 +22,9 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
     const [completed, setCompleted] = useState<number[]>([])
     const [current, setCurrent] = useState(0)
 
+    // Ensure parts is always an array
+    const safeParts = Array.isArray(job.parts) ? job.parts : (job.parts ? [job.parts] : [])
+
     const getDistanceMiles = () => route ? (route.distanceMeters / 1609.34).toFixed(1) : '—'
 
     const getPrice = () => {
@@ -25,7 +32,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
         const baseRate = 30
         const perMile = 1.25
         const partRate = 5
-        const partCount = job.parts?.length || 0
+        const partCount = safeParts.length
         const distanceMiles = route.distanceMeters / 1609.34
         return (baseRate + distanceMiles * perMile + partCount * partRate).toFixed(2)
     }
@@ -159,7 +166,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
                 <div className="space-y-4">
                     <div>
                         <label className="block font-semibold">Payload</label>
-                        <input type="text" name="parts" value={editedJob.parts.join(', ')} onChange={handleInputChange} className="bg-neutral-900 text-white w-full p-2 rounded" />
+                        <input type="text" name="parts" value={safeParts.join(', ')} onChange={handleInputChange} className="bg-neutral-900 text-white w-full p-2 rounded" />
                     </div>
                     <div>
                         <label className="block font-semibold">Pickup</label>
@@ -177,7 +184,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
             ) : (
                 <span className='space-y-4'>
                     <ul className="space-y-2 bg-white/5 p-4 rounded-xl">
-                        <li><strong>Payload:</strong> {job.parts?.join(', ')}</li>
+                        <li><strong>Payload:</strong> {safeParts.length > 0 ? safeParts.join(', ') : 'No parts specified'}</li>
                         <li><strong>Pickup:</strong> {job.pickup}</li>
                         <li><strong>Dropoff:</strong> {job.dropoff}</li>
                     </ul>
@@ -185,7 +192,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
                         <li><strong>Distance:</strong> {getDistanceMiles()} mi</li>
                         <li><strong>Deadline:</strong> {formatDeadline(job.deadline || '')}</li>
                         <li><strong>Estimate:</strong> ${getPrice()}</li>
-                        <li><strong>Status:</strong> {job.status}</li>
+                        <li><strong>Status:</strong> {job.status || 'No status'}</li>
                     </ul>
                 </span>
             )}
