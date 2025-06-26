@@ -6,6 +6,11 @@ import { SendHorizonal } from 'lucide-react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import MultiLegForm from '@/app/components/ui/job/MultiLegForm'
 
+// Function to convert markdown bold to HTML
+const parseMarkdownBold = (text: string) => {
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+}
+
 export default function ChatPage() {
     const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat')
     const [messages, setMessages] = useState<string[]>([])
@@ -202,7 +207,12 @@ export default function ChatPage() {
                                                 }}
                                             />
                                         ) : (
-                                            <div className="whitespace-pre-wrap">{content}</div>
+                                            <div 
+                                                className="whitespace-pre-wrap"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: parseMarkdownBold(content)
+                                                }}
+                                            />
                                         )}
                                     </div>
                                     
