@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import Navbar from '@/app/components/nav/Navbar'
 
 type Leg = {
   pickup?: string
@@ -86,38 +87,41 @@ export default function StaffJobsList() {
   if (loading) return <div>Loading...</div>
 
   return (
-    <div className="max-w-2xl mx-auto py-12">
-      <h1 className="text-2xl font-bold mb-6">All Jobs</h1>
-      <ul className="space-y-4">
-        {jobs.map(job => {
-          const pickup = getJobPickup(job)
-          const dropoff = getJobDropoff(job)
-          const earliestDeadline = getJobEarliestDeadline(job)
-          return (
-            <li
-              key={job.id}
-              className={`p-4 bg-neutral-800 rounded-lg flex justify-between items-center border-2 ${getDeadlineColor(earliestDeadline)}`}
-            >
-              <div>
-                <div className="font-bold text-lg mb-1">
-                  {Array.isArray(job.parts) ? job.parts.join(', ') : job.parts || '—'}
+    <>
+      <Navbar />
+      <div className="max-w-2xl mx-auto py-12">
+        <h1 className="text-2xl font-bold mb-6">All Jobs</h1>
+        <ul className="space-y-4">
+          {jobs.map(job => {
+            const pickup = getJobPickup(job)
+            const dropoff = getJobDropoff(job)
+            const earliestDeadline = getJobEarliestDeadline(job)
+            return (
+              <li
+                key={job.id}
+                className={`p-4 bg-neutral-800 rounded-lg flex justify-between items-center border-2 ${getDeadlineColor(earliestDeadline)}`}
+              >
+                <div>
+                  <div className="font-bold text-lg mb-1">
+                    {Array.isArray(job.parts) ? job.parts.join(', ') : job.parts || '—'}
+                  </div>
+                  <div className="mb-1">
+                    <span className="font-semibold">From:</span> {pickup || <span className="text-gray-500">(no pickup)</span>}
+                  </div>
+                  <div className="mb-1">
+                    <span className="font-semibold">To:</span> {dropoff || <span className="text-gray-500">(no dropoff)</span>}
+                  </div>
+                  <div className="font-semibold mb-1">Status: {job.status}</div>
+                  <div className="text-xs text-gray-400 mb-1">Deadline: {formatDeadline(earliestDeadline)}</div>
                 </div>
-                <div className="mb-1">
-                  <span className="font-semibold">From:</span> {pickup || <span className="text-gray-500">(no pickup)</span>}
-                </div>
-                <div className="mb-1">
-                  <span className="font-semibold">To:</span> {dropoff || <span className="text-gray-500">(no dropoff)</span>}
-                </div>
-                <div className="font-semibold mb-1">Status: {job.status}</div>
-                <div className="text-xs text-gray-400 mb-1">Deadline: {formatDeadline(earliestDeadline)}</div>
-              </div>
-              <Link href={`/staff/job/${job.id}`}>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded">View</button>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
+                <Link href={`/staff/job/${job.id}`}>
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded">View</button>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </>
   )
 } 

@@ -1,8 +1,9 @@
-import { useState, useCallback, ChangeEvent } from 'react'
+import { useState, useCallback, ChangeEvent, useEffect } from 'react'
 import JobMapClient from '@/app/components/ui/job/JobMapClient'
 import Link from 'next/link'
 import { ParsedJob } from '@/types/job'
 import { formatDeadline } from '@/lib/formatDeadline'
+import ProgressBar from '@/app/components/ui/job/ProgressBar'
 
 export default function SingleLegJobView({ job }: { job: ParsedJob }) {
     const [isEditing, setIsEditing] = useState(false)
@@ -12,6 +13,10 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
         distanceMeters: number
         duration: number
     } | null>(null)
+
+    const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null)
+    const [completed, setCompleted] = useState<number[]>([])
+    const [current, setCurrent] = useState(0)
 
     const getDistanceMiles = () => route ? (route.distanceMeters / 1609.34).toFixed(1) : '—'
 
@@ -63,8 +68,75 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
         }
     }
 
+    const progressNodes = ['Start', 'Pickup', 'Dropoff']
+
+    // Fetch driver location
+    useEffect(() => {
+        async function fetchLocation() {
+            try {
+                const res = await fetch(`/api/getDriverLocation?jobId=${job.id}`)
+                if (!res.ok) return
+                const data = await res.json()
+                if (data && data.latitude && data.longitude) {
+                    setDriverLocation({ lat: data.latitude, lng: data.longitude })
+                }
+            } catch {
+                // Ignore fetch errors
+            }
+        }
+        if (job.status === 'active' || job.status === 'currently driving') {
+            fetchLocation()
+            const interval = setInterval(fetchLocation, 10000)
+            return () => clearInterval(interval)
+        }
+    }, [job.id, job.status])
+
+    // Calculate progress
+    useEffect(() => {
+        if (!driverLocation) return
+        const completedNodes: number[] = [0] // Start is always complete
+        let curr = 0
+        // Calculate distance to pickup
+        const pickupLat = (job as { pickup_lat?: number }).pickup_lat
+        const pickupLng = (job as { pickup_lng?: number }).pickup_lng
+        const dropoffLat = (job as { dropoff_lat?: number }).dropoff_lat
+        const dropoffLng = (job as { dropoff_lng?: number }).dropoff_lng
+        function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+            const toRad = (x: number) => (x * Math.PI) / 180
+            const R = 6371e3
+            const dLat = toRad(lat2 - lat1)
+            const dLon = toRad(lon2 - lon1)
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            return R * c
+        }
+        if (pickupLat && pickupLng) {
+            const distToPickup = haversine(driverLocation.lat, driverLocation.lng, pickupLat, pickupLng)
+            if (distToPickup < 100) {
+                completedNodes.push(1)
+                curr = 2 // Next: Dropoff
+            } else {
+                curr = 1 // En route to Pickup
+            }
+        }
+        if (dropoffLat && dropoffLng && completedNodes.includes(1)) {
+            const distToDropoff = haversine(driverLocation.lat, driverLocation.lng, dropoffLat, dropoffLng)
+            if (distToDropoff < 100) {
+                completedNodes.push(2)
+                curr = 2
+            }
+        }
+        setCompleted(completedNodes)
+        setCurrent(curr)
+    }, [driverLocation, job.id])
+
     return (
         <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white">
+            {(job.status === 'active' || job.status === 'currently driving') && (
+                <ProgressBar nodes={progressNodes} current={current} completed={completed} />
+            )}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Job Overview</h1>
                 {!isEditing ? (
@@ -113,7 +185,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
                         <li><strong>Distance:</strong> {getDistanceMiles()} mi</li>
                         <li><strong>Deadline:</strong> {formatDeadline(job.deadline || '')}</li>
                         <li><strong>Estimate:</strong> ${getPrice()}</li>
-                        <li><strong>Status:</strong> Pending</li>
+                        <li><strong>Status:</strong> {job.status}</li>
                     </ul>
                 </span>
             )}

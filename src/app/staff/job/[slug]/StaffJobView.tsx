@@ -6,6 +6,7 @@ import MultiLegJobView from '@/app/job/views/MultiLegJobView'
 import StaffActions from './StaffActions'
 import { ParsedJob, JobLeg } from '@/types/job'
 import { supabase } from '@/lib/supabaseClient'
+import Navbar from '@/app/components/nav/Navbar'
 
 interface MultiLegJob extends Omit<ParsedJob, 'deadline' | 'status'> {
     legs: JobLeg[];
@@ -99,6 +100,38 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         }
     }
 
+    const handleStartJob = async () => {
+        const res = await fetch('/api/updateJob', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jobId: job.id,
+                updates: { status: 'active' },
+            }),
+        })
+        if (res.ok) {
+            setJob(prev => ({ ...prev, status: 'active' }))
+        } else {
+            alert('Failed to start job.')
+        }
+    }
+
+    const handlePauseJob = async () => {
+        const res = await fetch('/api/updateJob', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jobId: job.id,
+                updates: { status: 'booked' },
+            }),
+        })
+        if (res.ok) {
+            setJob(prev => ({ ...prev, status: 'booked' }))
+        } else {
+            alert('Failed to pause/stop job.')
+        }
+    }
+
     const renderJobView = () => {
         if (isMultiLegJob(job)) {
             return <MultiLegJobView job={job} />
@@ -108,8 +141,8 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
 
     // Driver-side GPS tracking
     useEffect(() => {
-        // Only track if job is in progress and user is staff (add your own staff check logic)
-        if (job.status !== 'in_progress') return
+        // Only track if job is currently driving and user is staff (add your own staff check logic)
+        if (job.status !== 'currently driving') return
         if (typeof window === 'undefined' || !('geolocation' in navigator)) return
         // TODO: Replace with real staff/driver check
         const isStaff = true
@@ -135,15 +168,34 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
     }, [job.id, job.status])
 
     return (
-        <div className="max-w-xl mx-auto py-12">
-            {renderJobView()}
-            <StaffActions
-                job={{...job, photo_urls: job.photo_urls || []}}
-                uploading={uploading}
-                onStatusChange={handleStatusChange}
-                onFileUpload={handleFileUpload}
-                onDeletePhoto={handleDeletePhoto}
-            />
-        </div>
+        <>
+            <Navbar />
+            <div className="mt-16 max-w-xl mx-auto py-12">
+                {renderJobView()}
+                {(job.status === 'active' || job.status === 'currently driving') && (
+                    <button
+                        onClick={handlePauseJob}
+                        className="bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded text-white w-full font-semibold mb-4 mt-4"
+                    >
+                        Pause/Stop Job
+                    </button>
+                )}
+                {job.status !== 'active' && job.status !== 'completed' && (
+                    <button
+                        onClick={handleStartJob}
+                        className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded text-white w-full font-semibold mb-4 mt-4"
+                    >
+                        Start Job
+                    </button>
+                )}
+                <StaffActions
+                    job={{...job, photo_urls: job.photo_urls || []}}
+                    uploading={uploading}
+                    onStatusChange={handleStatusChange}
+                    onFileUpload={handleFileUpload}
+                    onDeletePhoto={handleDeletePhoto}
+                />
+            </div>
+        </>
     )
 } 

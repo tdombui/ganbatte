@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, ChangeEvent } from 'react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import { JobLeg } from '@/types/job'
+import ProgressBar from '@/app/components/ui/job/ProgressBar'
 
 interface MultiLegJobViewProps {
     job: {
@@ -22,6 +23,14 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
         distanceMeters: number
         duration: number
     } | null>(null)
+    const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null)
+    const [completed, setCompleted] = useState<number[]>([])
+    const [current, setCurrent] = useState(0)
+
+    const progressNodes = job.legs.flatMap((leg, idx) => [
+        `Pickup ${idx + 1}`,
+        `Dropoff ${idx + 1}`
+    ])
 
     useEffect(() => {
         if (isEditing || !window.google || !mapRef.current || !Array.isArray(job.legs)) return
@@ -80,6 +89,63 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
             }
         )
     }, [job, isEditing])
+
+    // Fetch driver location
+    useEffect(() => {
+        async function fetchLocation() {
+            try {
+                const res = await fetch(`/api/getDriverLocation?jobId=${job.id}`)
+                if (!res.ok) return
+                const data = await res.json()
+                if (data && data.latitude && data.longitude) {
+                    setDriverLocation({ lat: data.latitude, lng: data.longitude })
+                }
+            } catch {
+                // Ignore fetch errors
+            }
+        }
+        if (job.status === 'active' || job.status === 'currently driving') {
+            fetchLocation()
+            const interval = setInterval(fetchLocation, 10000)
+            return () => clearInterval(interval)
+        }
+    }, [job.id, job.status])
+
+    // Calculate progress based on driver location
+    useEffect(() => {
+        if (!driverLocation) return
+        const completedNodes: number[] = []
+        let curr = 0
+        // Build a flat list of all pickup/dropoff points in order
+        const points: { lat: number; lng: number }[] = []
+        job.legs.forEach(leg => {
+            if (leg.pickup_lat && leg.pickup_lng) points.push({ lat: leg.pickup_lat, lng: leg.pickup_lng })
+            if (leg.dropoff_lat && leg.dropoff_lng) points.push({ lat: leg.dropoff_lat, lng: leg.dropoff_lng })
+        })
+        function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+            const toRad = (x: number) => (x * Math.PI) / 180
+            const R = 6371e3
+            const dLat = toRad(lat2 - lat1)
+            const dLon = toRad(lon2 - lon1)
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            return R * c
+        }
+        // Mark nodes as complete if driver is within 100m, in order
+        for (let i = 0; i < points.length; i++) {
+            const dist = haversine(driverLocation.lat, driverLocation.lng, points[i].lat, points[i].lng)
+            if (dist < 100) {
+                completedNodes.push(i)
+                curr = i + 1
+            } else {
+                break // Only mark in order
+            }
+        }
+        setCompleted(completedNodes)
+        setCurrent(curr)
+    }, [driverLocation, job.id, job.legs])
 
     const getGoogleMapsLink = () => {
         const validLegs = job.legs?.filter(
@@ -162,7 +228,10 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
     };
 
     return (
-        <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white">
+        <div className=" space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white">
+            {(job.status === 'active' || job.status === 'currently driving') && (
+                <ProgressBar nodes={progressNodes} current={current} completed={completed} />
+            )}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Multi-Trip Job Overview</h1>
                 {!isEditing ? (

@@ -41,12 +41,12 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                 <label htmlFor="status" className="block font-semibold mb-2">Update Status</label>
                 <select
                     id="status"
-                    value={job.status || 'pending'}
+                    value={job.status || 'booked'}
                     onChange={(e) => onStatusChange(e.target.value)}
                     className="bg-neutral-900 text-white w-full p-2 rounded"
                 >
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
+                    <option value="booked">Booked</option>
+                    <option value="currently driving">Currently Driving</option>
                     <option value="delivered">Delivered</option>
                 </select>
             </div>
