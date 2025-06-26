@@ -108,97 +108,128 @@ export default function MultiLegForm() {
     }
 
     return (
-        <div className="max-w-xl mx-auto space-y-8">
-            <Toast message={toast} onClose={() => setToast('')} />
-            {/* Parts Section */}
-            <div>
-                <h2 className="text-lg font-bold text-white mb-2">Parts / Payload</h2>
-                <div className="flex gap-2 mb-2">
-                    <input
-                        type="text"
-                        value={partInput}
-                        onChange={e => setPartInput(e.target.value)}
-                        onKeyDown={handlePartInputKeyDown}
-                        placeholder="Add a part and press Enter"
-                        className="px-4 py-2 rounded bg-neutral-900 text-white w-full"
-                        disabled={loading}
-                    />
-                    <button
-                        onClick={handleAddPart}
-                        className="bg-emerald-500 text-white px-4 py-2 rounded disabled:opacity-50"
-                        disabled={!partInput.trim() || loading}
-                        type="button"
-                    >
-                        Add
-                    </button>
+        <div className="max-w-2xl mx-auto">
+            <div className="bg-neutral-800/70 rounded-xl p-8 shadow-xl border border-neutral-700">
+                <Toast message={toast} onClose={() => setToast('')} />
+                
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-2xl font-bold text-white mb-2">Create Multi-Trip Job</h1>
+                    <p className="text-neutral-300">Set up a delivery job with multiple parts and destinations</p>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-1">
-                    {parts.map((part, idx) => (
-                        <span key={part} className="flex items-center bg-emerald-700 text-white px-3 py-1 rounded-full text-sm">
-                            {part}
-                            <button
-                                onClick={() => handleRemovePart(idx)}
-                                className="ml-2 text-white hover:text-red-300 font-bold"
-                                type="button"
-                                aria-label={`Remove ${part}`}
-                            >×</button>
-                        </span>
-                    ))}
-                </div>
-                {errors.parts && <div className="text-red-400 text-sm mt-1">{errors.parts}</div>}
-            </div>
 
-            {/* Legs Section */}
-            <div>
-                <h2 className="text-lg font-bold text-white mb-2">Trips</h2>
-                <div className="space-y-4">
-                    {legs.map((leg, idx) => (
-                        <div key={leg.part} className="relative bg-neutral-900 p-5 rounded-lg shadow space-y-2 text-white border border-neutral-700">
-                            <button
-                                onClick={() => handleRemoveLeg(idx)}
-                                className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xl font-bold"
-                                type="button"
-                                aria-label={`Remove leg for ${leg.part}`}
+                <div className="space-y-8">
+                    {/* Parts Section */}
+                    <div className="bg-neutral-900/50 rounded-lg p-6 border border-neutral-600">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span className="text-emerald-400">📦</span>
+                            Parts / Payload
+                        </h2>
+                        <div className="flex gap-2 mb-3">
+                            <input
+                                type="text"
+                                value={partInput}
+                                onChange={e => setPartInput(e.target.value)}
+                                onKeyDown={handlePartInputKeyDown}
+                                placeholder="Add a part and press Enter"
+                                className="px-4 py-3 rounded-lg bg-neutral-800 text-white w-full border border-neutral-600 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                                 disabled={loading}
-                            >×</button>
-                            <h3 className="font-semibold text-emerald-300 mb-2">{leg.part}</h3>
-                            <AddressInput
-                                label="Pickup Location"
-                                value={leg.pickup}
-                                onChange={val => updateLeg(idx, 'pickup', val)}
                             />
-                            {errors[`pickup${idx}`] && <div className="text-red-400 text-sm">{errors[`pickup${idx}`]}</div>}
-                            <AddressInput
-                                label="Dropoff Location"
-                                value={leg.dropoff}
-                                onChange={val => updateLeg(idx, 'dropoff', val)}
-                            />
-                            {errors[`dropoff${idx}`] && <div className="text-red-400 text-sm">{errors[`dropoff${idx}`]}</div>}
+                            <button
+                                onClick={handleAddPart}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg disabled:opacity-50 transition-colors font-medium"
+                                disabled={!partInput.trim() || loading}
+                                type="button"
+                            >
+                                Add
+                            </button>
                         </div>
-                    ))}
-                </div>
-            </div>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {parts.map((part, idx) => (
+                                <span key={part} className="flex items-center bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm">
+                                    {part}
+                                    <button
+                                        onClick={() => handleRemovePart(idx)}
+                                        className="ml-2 text-white hover:text-red-300 font-bold transition-colors"
+                                        type="button"
+                                        aria-label={`Remove ${part}`}
+                                    >×</button>
+                                </span>
+                            ))}
+                        </div>
+                        {errors.parts && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors.parts}</div>}
+                    </div>
 
-            {/* Deadline Section */}
-            <div>
-                <h2 className="text-lg font-bold text-white mb-2">Deadline</h2>
-                <div className="flex flex-col gap-2">
-                    <DeadlinePicker value={deadline} onChange={setDeadline} />
-                    {errors.deadline && <div className="text-red-400 text-sm">{errors.deadline}</div>}
-                </div>
-            </div>
+                    {/* Legs Section */}
+                    <div className="bg-neutral-900/50 rounded-lg p-6 border border-neutral-600">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span className="text-emerald-400">🚚</span>
+                            Delivery Trips
+                        </h2>
+                        <div className="space-y-4">
+                            {legs.map((leg, idx) => (
+                                <div key={leg.part} className="relative bg-neutral-800 p-6 rounded-lg shadow-lg space-y-4 text-white border border-neutral-600 hover:border-neutral-500 transition-colors">
+                                    <button
+                                        onClick={() => handleRemoveLeg(idx)}
+                                        className="absolute top-3 right-3 text-red-400 hover:text-red-600 text-xl font-bold transition-colors"
+                                        type="button"
+                                        aria-label={`Remove leg for ${leg.part}`}
+                                        disabled={loading}
+                                    >×</button>
+                                    <h3 className="font-semibold text-emerald-300 mb-3 text-lg border-b border-neutral-600 pb-2">{leg.part}</h3>
+                                    <div className="space-y-4">
+                                        <div className="bg-neutral-700/50 rounded-lg p-4">
+                                            <AddressInput
+                                                label="Pickup Location"
+                                                value={leg.pickup}
+                                                onChange={val => updateLeg(idx, 'pickup', val)}
+                                            />
+                                            {errors[`pickup${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`pickup${idx}`]}</div>}
+                                        </div>
+                                        <div className="bg-neutral-700/50 rounded-lg p-4">
+                                            <AddressInput
+                                                label="Dropoff Location"
+                                                value={leg.dropoff}
+                                                onChange={val => updateLeg(idx, 'dropoff', val)}
+                                            />
+                                            {errors[`dropoff${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`dropoff${idx}`]}</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {legs.length === 0 && (
+                                <div className="text-center py-8 text-neutral-400 border-2 border-dashed border-neutral-600 rounded-lg">
+                                    <p>Add parts above to create delivery trips</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-            {/* Submit Button */}
-            <div className="pt-2">
-                <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded text-white w-full font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
-                    type="button"
-                >
-                    {loading && <span className="loader border-white border-t-emerald-300 mr-2"></span>}
-                    {loading ? 'Sending...' : '📦 Submit Job'}
-                </button>
+                    {/* Deadline Section */}
+                    <div className="bg-neutral-900/50 rounded-lg p-6 border border-neutral-600">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span className="text-emerald-400">⏰</span>
+                            Deadline
+                        </h2>
+                        <div className="bg-neutral-700/50 rounded-lg p-4">
+                            <DeadlinePicker value={deadline} onChange={setDeadline} />
+                            {errors.deadline && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors.deadline}</div>}
+                        </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-4">
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-lg text-white w-full font-semibold flex items-center justify-center gap-3 disabled:opacity-60 transition-colors text-lg shadow-lg"
+                            type="button"
+                        >
+                            {loading && <span className="loader border-white border-t-emerald-300 mr-2"></span>}
+                            {loading ? 'Creating Job...' : '📦 Create Multi-Trip Job'}
+                        </button>
+                    </div>
+                </div>
             </div>
             {/* Loader spinner style */}
             <style>{`.loader { border: 3px solid #fff3; border-radius: 50%; border-top: 3px solid #34d399; width: 1.2em; height: 1.2em; animation: spin 0.7s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
