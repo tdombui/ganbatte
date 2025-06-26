@@ -256,7 +256,7 @@ export default function ChatPage() {
                     <div className="grid lg:grid-cols-3 gap-6">
                         {/* Main Chat Area */}
                         <div className="lg:col-span-2">
-                            <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-6 bg-neutral-950 text-white border border-neutral-800">
+                            <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-4 bg-neutral-950 text-white border border-neutral-800">
                                 {messages.map((msg, idx) => {
                                     const isUser = msg.startsWith('user:')
                                     const content = msg.replace(/^(user|ai):/, '')
@@ -382,9 +382,9 @@ export default function ChatPage() {
                                         {savedJob?.id && (
                                             <a
                                                 href={`/job/${savedJob.id}`}
-                                                className="text-sm text-emerald-400 hover:underline"
+                                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
                                             >
-                                                View →
+                                                View Job
                                             </a>
                                         )}
                                     </div>
