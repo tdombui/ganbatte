@@ -99,9 +99,10 @@ export default function MultiLegForm() {
         }
     }
 
-    function handlePartInputKeyDown({ key, preventDefault }: React.KeyboardEvent<HTMLInputElement>) {
-        if (key === 'Enter') {
-            preventDefault()
+    function handlePartInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
             handleAddPart()
         }
     }
@@ -111,9 +112,10 @@ export default function MultiLegForm() {
             <Toast message={toast} onClose={() => setToast('')} />
             {/* Parts Section */}
             <div>
-                <h2 className="text-lg font-bold text-white mb-2">Payload Parts</h2>
+                <h2 className="text-lg font-bold text-white mb-2">Parts</h2>
                 <div className="flex gap-2 mb-2">
                     <input
+                        type="text"
                         value={partInput}
                         onChange={e => setPartInput(e.target.value)}
                         onKeyDown={handlePartInputKeyDown}
@@ -148,7 +150,7 @@ export default function MultiLegForm() {
 
             {/* Legs Section */}
             <div>
-                <h2 className="text-lg font-bold text-white mb-2">Legs</h2>
+                <h2 className="text-lg font-bold text-white mb-2">Trips</h2>
                 <div className="space-y-4">
                     {legs.map((leg, idx) => (
                         <div key={leg.part} className="relative bg-neutral-900 p-5 rounded-lg shadow space-y-2 text-white border border-neutral-700">
