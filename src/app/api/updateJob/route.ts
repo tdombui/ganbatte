@@ -4,8 +4,10 @@ import { JobLeg } from '@/types/job'
 
 const geocodeAddress = async (address: string) => {
     if (!address) return null;
+    // California center coordinates for biasing
+    const californiaCenter = '36.7783,-119.4179'
     const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&location=${californiaCenter}&key=${process.env.GOOGLE_MAPS_API_KEY}`
     )
     const data = await res.json()
     return data.results?.[0]?.geometry?.location || null

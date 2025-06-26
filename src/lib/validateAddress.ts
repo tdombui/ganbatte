@@ -7,7 +7,9 @@ export async function validateAddress(address: string): Promise<{ valid: boolean
 
     if (isVague) return { valid: false }
 
-    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`)
+    // California center coordinates for biasing
+    const californiaCenter = '36.7783,-119.4179'
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&location=${californiaCenter}&key=${process.env.GOOGLE_MAPS_API_KEY}`)
     const data = await res.json()
 
     if (data.status === 'OK' && data.results.length > 0) {

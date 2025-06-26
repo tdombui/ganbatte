@@ -24,9 +24,13 @@ export async function POST(req: Request) {
             return NextResponse.json([], { status: 500 })
         }
 
+        // California center coordinates (roughly center of CA)
+        const californiaCenter = '36.7783,-119.4179' // Latitude, Longitude
+        const radius = '500000' // 500km radius to cover most of California
+
         const endpoint = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
             input
-        )}&types=address&key=${apiKey}`
+        )}&types=address&location=${californiaCenter}&radius=${radius}&key=${apiKey}`
 
         console.log('🔍 Fetching address suggestions for:', input)
         const res = await fetch(endpoint)
