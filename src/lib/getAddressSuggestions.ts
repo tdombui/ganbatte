@@ -1,4 +1,11 @@
 // src/lib/getAddressSuggestions.ts
+interface AddressSuggestion {
+    id: string
+    text: string
+    mainText: string
+    secondaryText: string
+}
+
 export async function getAddressSuggestions(input: string): Promise<string[]> {
     const res = await fetch('/api/getAddressSuggestions', {
         method: 'POST',
@@ -11,5 +18,6 @@ export async function getAddressSuggestions(input: string): Promise<string[]> {
         return []
     }
 
-    return await res.json()
+    const suggestions: AddressSuggestion[] = await res.json()
+    return suggestions.map(suggestion => suggestion.text)
 }
