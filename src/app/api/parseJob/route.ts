@@ -6,7 +6,9 @@ import { normalizeDeadline } from '@/lib/normalizeDeadline'
 
 export async function POST(req: Request) {
     try {
-        const { text, history } = await req.json()
+        const { text, history, overrideField } = await req.json()
+
+        console.log('🔍 ParseJob request:', { text, overrideField, historyLength: history?.length || 0 })
 
         const prompt = `
 You're an assistant for a parts delivery service called Ganbatte. When a customer sends a message, your job is to extract these fields and return them as JSON only — no backticks, no markdown, no explanations.
@@ -16,6 +18,8 @@ ${history}
 
 Most recent message:
 ${text}
+
+${overrideField ? `IMPORTANT: The user is clarifying the ${overrideField} field. Please extract ONLY the ${overrideField} from their message and keep other fields empty.` : ''}
 
 Return a JSON object with:
 {
@@ -42,9 +46,16 @@ Return a JSON object with:
         console.log('✅ Cleaned AI output:', cleanJson)
         const parsed: ParsedJob = JSON.parse(cleanJson)
 
+        console.log('🔍 Parsed job data:', parsed)
+
         // Validate pickup and dropoff
         const pickupCheck = await validateAddress(parsed.pickup)
         const dropoffCheck = await validateAddress(parsed.dropoff)
+
+        console.log('🔍 Address validation results:', {
+            pickup: { address: parsed.pickup, valid: pickupCheck.valid },
+            dropoff: { address: parsed.dropoff, valid: dropoffCheck.valid }
+        })
 
         // Normalize deadline
         const normalized = normalizeDeadline(parsed.deadline ?? '')
@@ -53,6 +64,7 @@ Return a JSON object with:
 
         // Request clarification for invalid fields
         if (!pickupCheck.valid) {
+            console.log('❌ Pickup validation failed, requesting clarification')
             return NextResponse.json({
                 job: parsed,
                 needsClarification: true,
@@ -61,6 +73,7 @@ Return a JSON object with:
         }
 
         if (!dropoffCheck.valid) {
+            console.log('❌ Dropoff validation failed, requesting clarification')
             return NextResponse.json({
                 job: parsed,
                 needsClarification: true,
@@ -69,6 +82,7 @@ Return a JSON object with:
         }
 
         if (!normalized.iso) {
+            console.log('❌ Deadline validation failed, requesting clarification')
             return NextResponse.json({
                 job: parsed,
                 needsClarification: true,
@@ -76,6 +90,7 @@ Return a JSON object with:
             })
         }
 
+        console.log('✅ All validations passed, returning job')
         return NextResponse.json({ job: parsed })
 
     } catch (err) {

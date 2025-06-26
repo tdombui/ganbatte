@@ -362,13 +362,6 @@ export default function ChatPage() {
                                     name="chat"
                                     className="flex-1 px-4 py-3 rounded-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 focus:outline-none"
                                     placeholder={messages.length === 0 ? "What do you need delivered?" : "Type your message..."}
-                                    onFocus={() => {
-                                        // Hide calendar when user focuses on input
-                                        if (showCalendar) {
-                                            setShowCalendar(false)
-                                            setSelectedDateTime('')
-                                        }
-                                    }}
                                 />
                                 <button
                                     type="submit"
