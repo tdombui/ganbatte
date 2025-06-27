@@ -57,7 +57,7 @@ export default function JobPage() {
                 }
 
                 console.log('🔍 Step 2: Making fetch request...')
-                const res = await fetch(`/api/getJob?id=${slug}`, {
+                const res = await fetch(`/api/getJob?jobId=${slug}`, {
                     headers
                 })
                 console.log('🔍 getJob response status:', res.status)
@@ -73,8 +73,8 @@ export default function JobPage() {
                 const data = await res.json()
                 console.log('🔍 getJob response:', data)
                 
-                if (!data.success) {
-                    console.error('❌ getJob returned error:', data.error)
+                if (!data.job) {
+                    console.error('❌ getJob returned no job data:', data)
                     setError(data.error || 'Failed to load job')
                     return
                 }
