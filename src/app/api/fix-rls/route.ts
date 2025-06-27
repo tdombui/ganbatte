@@ -17,15 +17,19 @@ export async function GET() {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
     
     // Drop existing policies that might be too restrictive
-    await supabaseAdmin.rpc('drop_policy_if_exists', { 
-      table_name: 'profiles', 
-      policy_name: 'Users can insert own profile' 
-    }).catch(() => {})
+    try {
+      await supabaseAdmin.rpc('drop_policy_if_exists', { 
+        table_name: 'profiles', 
+        policy_name: 'Users can insert own profile' 
+      })
+    } catch {}
     
-    await supabaseAdmin.rpc('drop_policy_if_exists', { 
-      table_name: 'customers', 
-      policy_name: 'Customers can view own data' 
-    }).catch(() => {})
+    try {
+      await supabaseAdmin.rpc('drop_policy_if_exists', { 
+        table_name: 'customers', 
+        policy_name: 'Customers can view own data' 
+      })
+    } catch {}
     
     // Create more permissive policies for the trigger function
     const { error: profilesPolicyError } = await supabaseAdmin
@@ -51,7 +55,9 @@ export async function GET() {
     ]
     
     for (const policy of policies) {
-      await supabaseAdmin.rpc('exec_sql', { sql: policy }).catch(() => {})
+      try {
+        await supabaseAdmin.rpc('exec_sql', { sql: policy })
+      } catch {}
     }
     
     return NextResponse.json({ 
