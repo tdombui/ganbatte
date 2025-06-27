@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import JobClientView from '../JobClientView'
 import { ParsedJob } from '@/types/job'
 import AuthModal from '@/app/components/auth/AuthModal'
+import { supabase } from '@/lib/auth'
 
 export default function JobPage() {
     const params = useParams()
@@ -32,7 +33,19 @@ export default function JobPage() {
                 console.log('🔍 Looking for job with ID:', slug)
                 console.log('🔍 USING NEW getJob API - this should appear if new code is running')
 
-                const res = await fetch(`/api/getJob?id=${slug}`)
+                // Get auth headers
+                const { data: { session } } = await supabase.auth.getSession()
+                const headers: HeadersInit = {
+                    'Content-Type': 'application/json',
+                }
+                
+                if (session?.access_token) {
+                    headers['Authorization'] = `Bearer ${session.access_token}`
+                }
+
+                const res = await fetch(`/api/getJob?id=${slug}`, {
+                    headers
+                })
                 console.log('🔍 getJob response status:', res.status)
                 
                 if (!res.ok) {
