@@ -52,6 +52,12 @@ ${text}
 
 ${overrideField ? `IMPORTANT: The user is clarifying the ${overrideField} field. Please extract ONLY the ${overrideField} from their message. Keep other fields as they were previously discussed.` : ''}
 
+EXTRACTION GUIDELINES:
+- parts: Extract any items, parts, or things being delivered (e.g., "wheels", "engine parts", "documents")
+- pickup: Extract the pickup address or location
+- dropoff: Extract the delivery address or location  
+- deadline: Extract ANY time reference, including natural language like "next tuesday", "tomorrow", "by 5pm", "asap", "urgent", etc. Keep the original text as-is.
+
 Return a JSON object with:
 {
   "parts": [],
@@ -59,6 +65,13 @@ Return a JSON object with:
   "dropoff": "",
   "deadline": ""
 }
+
+Examples of deadline extraction:
+- "next tues by 2pm" → deadline: "next tues by 2pm"
+- "tomorrow at 3pm" → deadline: "tomorrow at 3pm" 
+- "as soon as possible" → deadline: "as soon as possible"
+- "by Friday" → deadline: "by Friday"
+- "urgent delivery" → deadline: "urgent delivery"
 `
 
         const completion = await openai.chat.completions.create({

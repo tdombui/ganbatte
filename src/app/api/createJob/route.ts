@@ -1,8 +1,17 @@
 // /api/createJob/route.ts
 
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { ParsedJob } from '@/types/job'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function fetchRouteInfo(pickup: string, dropoff: string) {
     if (!pickup || !dropoff) return { distance_meters: null, duration_seconds: null }
@@ -21,8 +30,29 @@ export async function POST(req: Request) {
     try {
         const job: ParsedJob = await req.json()
 
+        // Get the user ID from the request headers (set by the client)
+        const authHeader = req.headers.get('authorization')
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Verify the user token and get user info
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         // Fetch route info
         const { distance_meters, duration_seconds } = await fetchRouteInfo(job.pickup, job.dropoff)
+
+        // Get user profile to determine customer_id
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
 
         // Explicit mapping to match your DB column names
         const insertPayload = {
@@ -34,6 +64,8 @@ export async function POST(req: Request) {
             distance_meters,
             duration_seconds,
             status: 'planned', // Set default status
+            user_id: user.id, // Associate with authenticated user
+            customer_id: profile?.role === 'customer' ? user.id : null, // Set customer_id if user is customer
         }
 
         const { data, error } = await supabase.from('jobs').insert([insertPayload]).select()

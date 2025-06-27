@@ -2,32 +2,90 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { ParsedJob } from '@/types/job'
-import { SendHorizonal } from 'lucide-react'
+import { SendHorizonal, LogOut, Settings } from 'lucide-react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import MultiLegForm from '@/app/components/ui/job/MultiLegForm'
+import { useAuth } from '../../hooks/useAuth'
+import AuthModal from '../components/auth/AuthModal'
+import { supabase } from '../../lib/auth'
 
 // Function to convert markdown bold to HTML
-const parseMarkdownBold = (text: string) => {
+function parseMarkdownBold(text: string): string {
     return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
 }
 
+// Helper function to get auth headers
+async function getAuthHeaders() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return {
+        'Content-Type': 'application/json',
+        ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+    }
+}
+
 export default function ChatPage() {
+    const { user, loading: authLoading, isAuthenticated, logout } = useAuth()
+    const [showAuthModal, setShowAuthModal] = useState(false)
     const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat')
     const [messages, setMessages] = useState<string[]>([])
-    const [parsedJob, setParsedJob] = useState<ParsedJob | null>(null)
-    const [loading, setLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
-    const [lastQuestion, setLastQuestion] = useState<'pickup' | 'dropoff' | 'deadline' | null>(null)
-    const [savedJob, setSavedJob] = useState<{ id: string } | null>(null)
     const [showCalendar, setShowCalendar] = useState(false)
     const [selectedDateTime, setSelectedDateTime] = useState('')
-    const chatEndRef = useRef<HTMLDivElement | null>(null)
+    const [parsedJob, setParsedJob] = useState<ParsedJob | null>(null)
+    const [savedJob, setSavedJob] = useState<{ id: string } | null>(null)
+    const [lastQuestion, setLastQuestion] = useState<'pickup' | 'dropoff' | 'deadline' | null>(null)
+    const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
+    const chatEndRef = useRef<HTMLDivElement>(null)
+    const settingsRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
+    // Close settings dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+                setShowSettingsDropdown(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [])
+
+    // Show auth modal if user is not authenticated
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            setShowAuthModal(true)
+        }
+    }, [authLoading, isAuthenticated])
+
+    // Add welcome message when user first loads the page
+    useEffect(() => {
+        if (isAuthenticated && user && messages.length === 0) {
+            const welcomeMessage = `ai:Hey ${user.full_name || user.email} 👋\n\nWhat do you need delivered today?`
+            setMessages([welcomeMessage])
+        }
+    }, [isAuthenticated, user, messages.length])
+
+    const handleSignOut = async () => {
+        await logout()
+        setMessages([])
+        setParsedJob(null)
+        setSavedJob(null)
+        setShowSettingsDropdown(false)
+    }
+
     async function handleSend(message: string) {
+        if (!isAuthenticated) {
+            setShowAuthModal(true)
+            return
+        }
+
         const recentMessages = messages.slice(-6).join('\n')
 
         let overrideField: 'pickup' | 'dropoff' | 'deadline' | null = null
@@ -42,9 +100,10 @@ export default function ChatPage() {
             if (['yes', 'y', 'yup', 'ye', 'yee'].includes(response)) {
                 setMessages((prev) => [...prev, `ai:Saving your job...`])
                 try {
+                    const headers = await getAuthHeaders()
                     const res = await fetch('/api/createJob', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify(parsedJob),
                     })
 
@@ -75,12 +134,13 @@ export default function ChatPage() {
             }
         }
 
-        setLoading(true)
+        setIsLoading(true)
 
         try {
+            const headers = await getAuthHeaders()
             const res = await fetch('/api/parseJob', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     text: message,
                     history: recentMessages,
@@ -132,7 +192,7 @@ export default function ChatPage() {
             console.error('❌ parseJob error:', err)
             setMessages((prev) => [...prev, 'ai:Internal server error.'])
         } finally {
-            setLoading(false)
+            setIsLoading(false)
         }
     }
 
@@ -142,9 +202,10 @@ export default function ChatPage() {
         if (confirmed) {
             setMessages((prev) => [...prev, `ai:Saving your job...`])
             try {
+                const headers = await getAuthHeaders()
                 const res = await fetch('/api/createJob', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify(parsedJob),
                 })
 
@@ -174,45 +235,30 @@ export default function ChatPage() {
 
     const handleCalendarSubmit = () => {
         if (selectedDateTime) {
-            const date = new Date(selectedDateTime)
-            const formattedDate = date.toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            })
-            
-            setMessages((prev) => [...prev, `user:${formattedDate}`])
+            const formattedDeadline = formatDeadline(selectedDateTime)
+            handleSend(`Set deadline to ${formattedDeadline}`)
             setShowCalendar(false)
             setSelectedDateTime('')
-            
-            // Process the date input
-            setTimeout(() => {
-                handleSend(formattedDate)
-            }, 100)
         }
     }
 
     const CalendarPicker = () => (
-        <div className="mr-auto max-w-[80%] mb-4">
-            <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
+        <div className="mr-auto max-w-[85%] sm:max-w-[80%] mb-4">
+            <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-3 sm:px-4 py-2">
                 <div className="space-y-3">
-                    <div className="text-center font-medium">Select Date & Time</div>
+                    <div className="text-center font-medium text-sm sm:text-base">Select Date & Time</div>
                     <input
                         type="datetime-local"
                         value={selectedDateTime}
                         onChange={(e) => setSelectedDateTime(e.target.value)}
-                        className="w-full px-3 py-2 bg-neutral-800 rounded-lg text-white border border-neutral-600 focus:border-blue-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-neutral-800 rounded-lg text-white border border-neutral-600 focus:border-blue-500 focus:outline-none text-sm"
                         min={new Date().toISOString().slice(0, 16)}
                     />
                     <div className="flex gap-2 justify-center">
                         <button
                             onClick={handleCalendarSubmit}
                             disabled={!selectedDateTime}
-                            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+                            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm"
                         >
                             Set Deadline
                         </button>
@@ -221,7 +267,7 @@ export default function ChatPage() {
                                 setShowCalendar(false)
                                 setSelectedDateTime('')
                             }}
-                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm"
                         >
                             Cancel
                         </button>
@@ -232,230 +278,337 @@ export default function ChatPage() {
         </div>
     )
 
-    return (
-        <div className="max-w-4xl mx-auto py-8">
-            {/* Header with Navigation */}
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex items-center gap-4">
-                    <header className="text-3xl font-bold font-sans">Ganbatte Part Sprinter</header>
-                    <span className="text-emerald-400 text-sm bg-emerald-900/20 px-3 mt-1 py-1 rounded-full">AI-Powered Parts Delivery</span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setViewMode((prev) => (prev === 'chat' ? 'form' : 'chat'))}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-                    >
-                        {viewMode === 'chat' ? 'Create Multi-Trip Job' : '← Single Trip'}
-                    </button>
+    // Show loading state while checking authentication
+    if (authLoading) {
+        return (
+            <div className="max-w-4xl mx-auto py-8">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-white">Loading...</div>
                 </div>
             </div>
+        )
+    }
 
-            {viewMode === 'chat' && (
-                <>
-                    {/* Chat Interface */}
-                    <div className="grid lg:grid-cols-3 gap-6">
-                        {/* Main Chat Area */}
-                        <div className="lg:col-span-2">
-                            <div className="rounded-xl p-6 h-96 overflow-y-scroll mb-4 bg-neutral-950 text-white border border-neutral-800">
-                                {messages.map((msg, idx) => {
-                                    const isUser = msg.startsWith('user:')
-                                    const content = msg.replace(/^(user|ai):/, '')
-                                    
-                                    return (
-                                        <div
-                                            key={idx}
-                                            className={`mb-4 max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}
-                                        >
-                                            <div className={`relative px-4 py-2 rounded-2xl ${
-                                                isUser 
-                                                    ? 'bg-blue-500 text-white rounded-br-md' 
-                                                    : 'bg-gray-600 text-white rounded-bl-md'
-                                            }`}>
-                                                {content.includes('/job/') ? (
-                                                    <span
-                                                        dangerouslySetInnerHTML={{
-                                                            __html: content.replace(
-                                                                /(\/job\/[a-z0-9\-]+)/gi,
-                                                                `<a href="$1" class="underline text-blue-200">$1</a>`
-                                                            ),
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div 
-                                                        className="whitespace-pre-wrap"
-                                                        dangerouslySetInnerHTML={{
-                                                            __html: parseMarkdownBold(content)
-                                                        }}
-                                                    />
-                                                )}
-                                            </div>
-                                            
-                                            {/* Message tail */}
-                                            <div className={`w-3 h-3 ${
-                                                isUser 
-                                                    ? 'ml-auto bg-blue-500 rounded-br-full' 
-                                                    : 'mr-auto bg-gray-600 rounded-bl-full'
-                                            }`} style={{ marginTop: '-12px' }}></div>
-                                        </div>
-                                    )
-                                })}
-                                
-                                {/* Confirmation buttons */}
-                                {awaitingConfirmation && (
-                                    <div className="mr-auto max-w-[80%] mb-4">
-                                        <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-4 py-2">
-                                            <div className="flex gap-3 justify-center">
-                                                <button
-                                                    onClick={() => handleConfirmation(true)}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
-                                                >
-                                                    <span className="text-lg">✅</span>
-                                                    <span>Yes</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleConfirmation(false)}
-                                                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors"
-                                                >
-                                                    <span className="text-lg">❌</span>
-                                                    <span>No</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
-                                    </div>
-                                )}
-
-                                {/* Calendar picker */}
-                                {showCalendar && <CalendarPicker />}
-                                
-                                <div ref={chatEndRef} />
-                            </div>
-
-                            {/* Thinking indicator - always reserves space */}
-                            <div className="h-8 mb-2 flex items-center">
-                                {loading && (
-                                    <div className="flex items-center gap-2 text-emerald-400 text-sm">
-                                        <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-                                        <span>Thinking...</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault()
-                                    const input = e.currentTarget.elements.namedItem('chat') as HTMLInputElement
-                                    if (!input.value.trim()) return
-                                    
-                                    // Hide calendar if user is typing manually
-                                    if (showCalendar) {
-                                        setShowCalendar(false)
-                                        setSelectedDateTime('')
-                                    }
-                                    
-                                    handleSend(input.value)
-                                    input.value = ''
-                                }}
-                                className="flex gap-2"
-                            >
-                                <input
-                                    name="chat"
-                                    className="flex-1 px-4 py-3 rounded-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 focus:outline-none"
-                                    placeholder={messages.length === 0 ? "What do you need delivered?" : "Type your message..."}
-                                />
+    return (
+        <>
+            <div className="max-w-4xl mx-auto py-4 sm:py-8 px-4 sm:px-0">
+                {/* Header with Navigation */}
+                <div className="mb-6 sm:mb-8 px-4 sm:px-0">
+                    {/* Title and settings on same line */}
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                        <header className="text-lg sm:text-2xl lg:text-3xl font-bold font-sans">Ganbatte Part Sprinter</header>
+                        
+                        {/* Settings Dropdown */}
+                        {isAuthenticated && (
+                            <div className="relative" ref={settingsRef}>
                                 <button
-                                    type="submit"
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-full transition-colors"
+                                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                                    className="p-2 text-neutral-400 hover:text-white transition-colors"
                                 >
-                                    <SendHorizonal className="m-1" />
+                                    <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
-                            </form>
-                        </div>
-
-                        {/* Sidebar */}
-                        <div className="space-y-6">
-                            {/* Job Overview */}
-                            {parsedJob && (
-                                <div className="bg-neutral-800/50 rounded-xl p-6 border border-neutral-700">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="font-bold text-lg text-white">Job Overview</h2>
-                                        {savedJob?.id && (
-                                            <a
-                                                href={`/job/${savedJob.id}`}
-                                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-                                            >
-                                                View Job
-                                            </a>
-                                        )}
+                                
+                                {showSettingsDropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 z-10">
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-red-400 hover:bg-neutral-700 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sign Out
+                                        </button>
                                     </div>
-
-                                    <div className="space-y-3 text-sm">
-                                        <div className="bg-neutral-900/50 rounded-lg p-3">
-                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Payload</span>
-                                            <div className="font-medium text-white mt-1">
-                                                {parsedJob.parts.length
-                                                    ? parsedJob.parts.join(', ')
-                                                    : 'None specified'}
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-900/50 rounded-lg p-3">
-                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Pickup</span>
-                                            <div className="font-medium text-white mt-1">
-                                                {parsedJob.pickup || '[not provided]'}
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-900/50 rounded-lg p-3">
-                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Dropoff</span>
-                                            <div className="font-medium text-white mt-1">
-                                                {parsedJob.dropoff || '[not provided]'}
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-900/50 rounded-lg p-3">
-                                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Deadline</span>
-                                            <div className="font-medium text-white mt-1">
-                                                {parsedJob.deadlineDisplay ? `by ${parsedJob.deadlineDisplay}` : 'None specified'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Quick FAQ */}
-                            <div className="bg-neutral-800/50 rounded-xl p-6 border border-neutral-700">
-                                <h3 className="font-bold text-lg text-white mb-4">❓ Quick Help</h3>
-                                <div className="space-y-3 text-sm">
-                                    <details className="group">
-                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
-                                            How does this work?
-                                        </summary>
-                                        <p className="text-neutral-400 mt-2 pl-4">
-                                            Just tell me what you need delivered, where to pick it up, and where to drop it off. I&apos;ll create a job and connect you with a driver.
-                                        </p>
-                                    </details>
-                                    <details className="group">
-                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
-                                            How fast is delivery?
-                                        </summary>
-                                        <p className="text-neutral-400 mt-2 pl-4">
-                                            Most deliveries are completed within 2-4 hours. Urgent deliveries can be arranged for faster service.
-                                        </p>
-                                    </details>
-                                    <details className="group">
-                                        <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
-                                            Can I track my delivery?
-                                        </summary>
-                                        <p className="text-neutral-400 mt-2 pl-4">
-                                            Yes! Once your job is active, you can track the driver&apos;s location in real-time and receive photo proof of delivery.
-                                        </p>
-                                    </details>
-                                </div>
+                                )}
                             </div>
+                        )}
+                    </div>
+                    
+                    {/* Tag and button on one line */}
+                    <div className="flex justify-between items-center">
+                        <span className="text-emerald-400 text-xs sm:text-sm bg-emerald-900/20 px-2 sm:px-3 py-1 rounded-full">AI-Powered Parts Delivery</span>
+                        
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button
+                                onClick={() => setViewMode((prev) => (prev === 'chat' ? 'form' : 'chat'))}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
+                            >
+                                {viewMode === 'chat' ? 'Multi-Trip' : '← Single Trip'}
+                            </button>
                         </div>
                     </div>
-                </>
-            )}
+                </div>
 
-            {viewMode === 'form' && <MultiLegForm />}
-        </div>
+                {viewMode === 'chat' && (
+                    <>
+                        {/* Chat Interface */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                            {/* Main Chat Area */}
+                            <div className="lg:col-span-2">
+                                <div className="rounded-xl p-3 sm:p-6 h-80 sm:h-96 overflow-y-scroll mb-4 bg-neutral-950 text-white border border-neutral-800" style={{ scrollbarGutter: 'stable' }}>
+                                    {messages.map((msg, idx) => {
+                                        const isUser = msg.startsWith('user:')
+                                        const content = msg.replace(/^(user|ai):/, '')
+                                        
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`mb-4 max-w-[85%] sm:max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}
+                                            >
+                                                <div className={`relative px-3 sm:px-4 py-2 rounded-2xl text-sm sm:text-base ${
+                                                    isUser 
+                                                        ? 'bg-blue-500 text-white rounded-br-md' 
+                                                        : 'bg-gray-600 text-white rounded-bl-md'
+                                                }`}>
+                                                    {content.includes('/job/') ? (
+                                                        <span
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: content.replace(
+                                                                    /(\/job\/[a-z0-9\-]+)/gi,
+                                                                    `<a href="$1" class="underline text-blue-200">$1</a>`
+                                                                ),
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div 
+                                                            className="whitespace-pre-wrap"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: parseMarkdownBold(content)
+                                                            }}
+                                                        />
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Message tail */}
+                                                <div className={`w-3 h-3 ${
+                                                    isUser 
+                                                        ? 'ml-auto bg-blue-500 rounded-br-full' 
+                                                        : 'mr-auto bg-gray-600 rounded-bl-full'
+                                                }`} style={{ marginTop: '-12px' }}></div>
+                                            </div>
+                                        )
+                                    })}
+                                    
+                                    {/* Confirmation buttons */}
+                                    {awaitingConfirmation && (
+                                        <div className="mr-auto max-w-[85%] sm:max-w-[80%] mb-4">
+                                            <div className="bg-gray-600 text-white rounded-2xl rounded-bl-md px-3 sm:px-4 py-2">
+                                                <div className="flex gap-2 sm:gap-3 justify-center">
+                                                    <button
+                                                        onClick={() => handleConfirmation(true)}
+                                                        className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-2 rounded-full flex items-center gap-1 sm:gap-2 transition-colors text-sm"
+                                                    >
+                                                        <span className="text-lg">✅</span>
+                                                        <span>Yes</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleConfirmation(false)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-full flex items-center gap-1 sm:gap-2 transition-colors text-sm"
+                                                    >
+                                                        <span className="text-lg">❌</span>
+                                                        <span>No</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
+                                        </div>
+                                    )}
+
+                                    {/* Calendar picker */}
+                                    {showCalendar && <CalendarPicker />}
+                                    
+                                    <div ref={chatEndRef} />
+                                </div>
+
+                                {/* Thinking indicator - always reserves space */}
+                                <div className="h-6 mb-1 flex items-center">
+                                    {isLoading && (
+                                        <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                                            <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Thinking...</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault()
+                                        const input = e.currentTarget.elements.namedItem('chat') as HTMLInputElement
+                                        if (!input.value.trim()) return
+                                        
+                                        // Hide calendar if user is typing manually
+                                        if (showCalendar) {
+                                            setShowCalendar(false)
+                                            setSelectedDateTime('')
+                                        }
+                                        
+                                        handleSend(input.value)
+                                        input.value = ''
+                                    }}
+                                    className="flex gap-2 mt-4 sm:mt-6"
+                                >
+                                    <input
+                                        name="chat"
+                                        className="flex-1 px-3 sm:px-4 py-3 rounded-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 focus:outline-none text-sm sm:text-base"
+                                        placeholder={messages.length === 0 ? "What do you need delivered?" : "Type your message..."}
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white p-3 rounded-full transition-colors"
+                                    >
+                                        <SendHorizonal className="w-5 h-5" />
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Sidebar - Visible on all devices */}
+                            <div className="space-y-4 sm:space-y-6 h-80 sm:h-96 overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
+                                {/* Job Overview */}
+                                {parsedJob && (
+                                    <div className="bg-neutral-800/50 rounded-xl p-4 sm:p-6 border border-neutral-700">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="font-bold text-lg text-white">Job Overview</h2>
+                                            {savedJob?.id && (
+                                                <a
+                                                    href={`/job/${savedJob.id}`}
+                                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium"
+                                                >
+                                                    View Job
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3 text-sm">
+                                            <div className="bg-neutral-900/50 rounded-lg p-3">
+                                                <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Payload</span>
+                                                <div className="font-medium text-white mt-1">
+                                                    {parsedJob.parts.length
+                                                        ? parsedJob.parts.join(', ')
+                                                        : 'None specified'}
+                                                </div>
+                                            </div>
+                                            <div className="bg-neutral-900/50 rounded-lg p-3">
+                                                <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Pickup</span>
+                                                <div className="font-medium text-white mt-1">
+                                                    {parsedJob.pickup || '[not provided]'}
+                                                </div>
+                                            </div>
+                                            <div className="bg-neutral-900/50 rounded-lg p-3">
+                                                <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Dropoff</span>
+                                                <div className="font-medium text-white mt-1">
+                                                    {parsedJob.dropoff || '[not provided]'}
+                                                </div>
+                                            </div>
+                                            <div className="bg-neutral-900/50 rounded-lg p-3">
+                                                <span className="text-neutral-400 font-bold text-xs uppercase tracking-wide">Deadline</span>
+                                                <div className="font-medium text-white mt-1">
+                                                    {parsedJob.deadlineDisplay ? `by ${parsedJob.deadlineDisplay}` : 'None specified'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quick FAQ */}
+                                <div className="bg-neutral-800/50 rounded-xl p-4 sm:p-6 border border-neutral-700">
+                                    <h3 className="font-bold text-lg text-white mb-4">Quick Help</h3>
+                                    <div className="space-y-3 text-sm">
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                How does this work?
+                                            </summary>
+                                            <p className="text-neutral-400 mt-2 pl-4">
+                                                Just tell me what you need delivered, where to pick it up, and where to drop it off. I&apos;ll create a job and connect you with a driver.
+                                            </p>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                How fast is delivery?
+                                            </summary>
+                                            <p className="text-neutral-400 mt-2 pl-4">
+                                                Most deliveries are completed within 2-4 hours. Urgent deliveries can be arranged for faster service.
+                                            </p>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                Can I track my delivery?
+                                            </summary>
+                                            <p className="text-neutral-400 mt-2 pl-4">
+                                                Yes! Once your job is active, you can track the driver&apos;s location in real-time and receive photo proof of delivery.
+                                            </p>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                Pricing & Fees
+                                            </summary>
+                                            <div className="text-neutral-400 mt-2 pl-4 space-y-2">
+                                                <p><strong>Base Rate:</strong> $30 flat fee per delivery</p>
+                                                <p><strong>Per Mile:</strong> $1.25 (calculated by optimized route)</p>
+                                                <p><strong>Per Item:</strong> $1 per extra lb (first 50lbs free)</p>
+                                                <p><strong>Same Day:</strong> +$60 priority routing</p>
+                                                <p><strong>After Hours/Weekend:</strong> +$60</p>
+                                                <p><strong>Advance Booking:</strong> 25% discount (24h+)</p>
+                                                <p><strong>Rush Fee:</strong> +$40 (deadline within 4hrs)</p>
+                                            </div>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                Payload Specifications
+                                            </summary>
+                                            <div className="text-neutral-400 mt-2 pl-4 space-y-2">
+                                                <p><strong>Max Weight:</strong> 50 lbs per delivery; $0.50 charge per lb over 50lbs.</p>
+                                                <p><strong>Max Dimensions:</strong> 4ft × 4ft × 6ft</p>
+                                                <p><strong>Vehicle Access:</strong> Sprinter Van, Hybrid Hatchback</p>
+                                                <p><strong>Restrictions:</strong>Payloads are subject restrictions.</p>
+                                                <p><strong>Packaging:</strong> Must be properly secured and labeled; if needed, we provide packaging materials and moving blankets.</p>
+                                            </div>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                Service Level Agreements
+                                            </summary>
+                                            <div className="text-neutral-400 mt-2 pl-4 space-y-2">
+                                                <p><strong>Standard Delivery:</strong> 2-4 hours</p>
+                                                <p><strong>Same Day Priority:</strong> 1-2 hours (+$60)</p>
+                                                <p><strong>Advance Booking:</strong> 25% discount (24h+)</p>
+                                                <p><strong>Rush Fee:</strong> +$40 (deadline within 4hrs)</p>
+                                                <p><strong>After Hours:</strong> +$60 (outside 8AM-6PM)</p>
+                                                <p><strong>Weekend Delivery:</strong> +$60</p>
+                                                <p><strong>Photo Proof:</strong> Included with every delivery</p>
+                                            </div>
+                                        </details>
+                                        <details className="group">
+                                            <summary className="cursor-pointer text-neutral-300 hover:text-white font-medium">
+                                                Payment & Billing
+                                            </summary>
+                                            <div className="text-neutral-400 mt-2 pl-4 space-y-2">
+                                                <p><strong>Payment Methods:</strong> Credit card, invoice billing</p>
+                                                <p><strong>Billing:</strong> Charged upon job completion</p>
+                                                <p><strong>Invoicing:</strong> Available for business accounts</p>
+                                                <p><strong>Refunds:</strong> Full refund if delivery fails</p>
+                                                <p><strong>Insurance:</strong> $1,000 coverage included</p>
+                                                <p><strong>Taxes:</strong> Applicable sales tax added</p>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {viewMode === 'form' && (
+                    <div className="bg-neutral-900/50 rounded-xl p-8 border border-neutral-700">
+                        <MultiLegForm />
+                    </div>
+                )}
+            </div>
+
+            {/* Authentication Modal */}
+            <AuthModal 
+                isOpen={showAuthModal} 
+                onClose={() => setShowAuthModal(false)}
+                mode="login"
+            />
+        </>
     )
 }
