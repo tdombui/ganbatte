@@ -20,29 +20,43 @@ export default function JobPage() {
     const [showAuthModal, setShowAuthModal] = useState(false)
 
     useEffect(() => {
-        if (authLoading) return
+        console.log('🔍 useEffect triggered:', { authLoading, isAuthenticated, slug })
+        
+        if (authLoading) {
+            console.log('🔍 Still loading auth, returning...')
+            return
+        }
 
         if (!isAuthenticated) {
+            console.log('🔍 Not authenticated, showing auth modal...')
             setShowAuthModal(true)
             setLoading(false)
             return
         }
 
+        console.log('🔍 Auth OK, fetching job...')
         async function fetchJob() {
             try {
                 console.log('🔍 Looking for job with ID:', slug)
                 console.log('🔍 USING NEW getJob API - this should appear if new code is running')
 
+                console.log('🔍 Step 1: Getting session...')
                 // Get auth headers
                 const { data: { session } } = await supabase.auth.getSession()
+                console.log('🔍 Session obtained:', session ? 'Yes' : 'No')
+                
                 const headers: HeadersInit = {
                     'Content-Type': 'application/json',
                 }
                 
                 if (session?.access_token) {
                     headers['Authorization'] = `Bearer ${session.access_token}`
+                    console.log('🔍 Auth token added to headers')
+                } else {
+                    console.log('🔍 No auth token available')
                 }
 
+                console.log('🔍 Step 2: Making fetch request...')
                 const res = await fetch(`/api/getJob?id=${slug}`, {
                     headers
                 })
@@ -55,6 +69,7 @@ export default function JobPage() {
                     return
                 }
 
+                console.log('🔍 Step 3: Parsing response...')
                 const data = await res.json()
                 console.log('🔍 getJob response:', data)
                 
@@ -70,6 +85,7 @@ export default function JobPage() {
                 console.error('❌ Job fetch error:', err)
                 setError('Failed to load job')
             } finally {
+                console.log('🔍 Step 4: Setting loading to false')
                 setLoading(false)
             }
         }
