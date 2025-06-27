@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import AuthModal from '../components/auth/AuthModal'
 import { supabase } from '../../lib/auth'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 // Function to convert markdown bold to HTML
 function parseMarkdownBold(text: string): string {
@@ -40,6 +41,7 @@ export default function ChatPage() {
     const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const settingsRef = useRef<HTMLDivElement>(null)
+    const router = useRouter()
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -310,11 +312,17 @@ export default function ChatPage() {
                 {parts.map((part, index) => {
                     if (part.match(/^\/job\/[a-z0-9\-]+$/i)) {
                         const jobId = part.split('/job/')[1]
+                        console.log('🔍 Rendering job link:', jobId)
                         return (
                             <Link
                                 key={index}
                                 href={`/job/${jobId}`}
-                                className="underline text-blue-200 hover:text-blue-100 transition-colors"
+                                className="underline text-blue-200 hover:text-blue-100 transition-colors inline-block"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    console.log('🔍 Job link clicked:', jobId)
+                                    router.push(`/job/${jobId}`)
+                                }}
                             >
                                 {part}
                             </Link>
@@ -403,6 +411,8 @@ export default function ChatPage() {
                                     {messages.map((msg, idx) => {
                                         const isUser = msg.startsWith('user:')
                                         const content = msg.replace(/^(user|ai):/, '')
+                                        
+                                        console.log('🔍 Rendering message:', { idx, isUser, content, hasJobLink: content.includes('/job/') })
                                         
                                         return (
                                             <div
