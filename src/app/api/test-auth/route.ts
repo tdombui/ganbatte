@@ -1,50 +1,55 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '../../../lib/auth'
+import { supabase } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    if (sessionError) {
-      return NextResponse.json({ 
-        error: 'Session error', 
-        details: sessionError.message 
-      }, { status: 500 })
-    }
+    // Get the authorization header
+    const authHeader = request.headers.get('authorization')
+    console.log('🔍 Auth header:', authHeader ? 'Present' : 'Missing')
 
-    // Get current user
+    // Try to get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    console.log('🔍 Session:', session ? `User ${session.user.id}` : 'No session')
+    console.log('🔍 Session error:', sessionError)
+
+    // Try to get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
-    if (userError) {
-      return NextResponse.json({ 
-        error: 'User error', 
-        details: userError.message 
-      }, { status: 500 })
+    console.log('🔍 User:', user ? `User ${user.id}` : 'No user')
+    console.log('🔍 User error:', userError)
+
+    // Check if we can access the profiles table
+    let profileData = null
+    let profileError = null
+    if (user) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      profileData = data
+      profileError = error
+      console.log('🔍 Profile data:', profileData ? 'Found' : 'Not found')
+      console.log('🔍 Profile error:', profileError)
     }
 
     return NextResponse.json({
       success: true,
-      session: session ? {
-        access_token: session.access_token ? 'present' : 'missing',
-        refresh_token: session.refresh_token ? 'present' : 'missing',
-        expires_at: session.expires_at,
-      } : null,
-      user: user ? {
-        id: user.id,
-        email: user.email,
-        email_confirmed_at: user.email_confirmed_at,
-        created_at: user.created_at,
-        last_sign_in_at: user.last_sign_in_at,
-      } : null,
-      message: 'Auth status check completed'
+      hasAuthHeader: !!authHeader,
+      hasSession: !!session,
+      hasUser: !!user,
+      userId: user?.id,
+      profileData,
+      errors: {
+        sessionError: sessionError?.message,
+        userError: userError?.message,
+        profileError: profileError?.message
+      }
     })
-
   } catch (error) {
-    console.error('Test auth error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Test auth error:', error)
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 } 

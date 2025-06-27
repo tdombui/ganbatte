@@ -59,13 +59,16 @@ export default function ChatPage() {
 
     // Show auth modal if user is not authenticated
     useEffect(() => {
+        console.log('🔍 Auth state check:', { authLoading, isAuthenticated, user: user?.id })
         if (!authLoading && !isAuthenticated) {
+            console.log('🔍 Showing auth modal - user not authenticated')
             setShowAuthModal(true)
         }
     }, [authLoading, isAuthenticated])
 
     // Add welcome message when user first loads the page
     useEffect(() => {
+        console.log('🔍 Welcome message check:', { isAuthenticated, userId: user?.id, messagesLength: messages.length })
         if (isAuthenticated && user && messages.length === 0) {
             const welcomeMessage = `ai:Hey ${user.full_name || user.email} 👋\n\nWhat do you need delivered today?`
             setMessages([welcomeMessage])
