@@ -16,6 +16,7 @@ function parseMarkdownBold(text: string): string {
 
 // Helper function to get auth headers
 async function getAuthHeaders() {
+    // Get the session from the current auth state instead of creating a new client call
     const { data: { session } } = await supabase.auth.getSession()
     return {
         'Content-Type': 'application/json',

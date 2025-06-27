@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
     try {
@@ -20,7 +11,7 @@ export async function POST(req: NextRequest) {
 
         // Verify the user token
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
         
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,7 +27,7 @@ export async function POST(req: NextRequest) {
 
         // Upload the file using the service role client
         const filePath = `${jobId}/${new Date().toISOString()}-${file.name}`
-        const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file)
+        const { error: uploadError } = await supabaseAdmin.storage.from('job-photos').upload(filePath, file)
 
         if (uploadError) {
             console.error('Error uploading file:', uploadError)
@@ -44,14 +35,14 @@ export async function POST(req: NextRequest) {
         }
 
         // Get the public URL of the file
-        const { data: { publicUrl } } = supabase.storage.from('job-photos').getPublicUrl(filePath)
+        const { data: { publicUrl } } = supabaseAdmin.storage.from('job-photos').getPublicUrl(filePath)
 
         if (!publicUrl) {
             return NextResponse.json({ error: 'Failed to get public URL' }, { status: 500 })
         }
 
         // Add the URL to the jobs table
-        const { data: jobData, error: fetchError } = await supabase
+        const { data: jobData, error: fetchError } = await supabaseAdmin
             .from('jobs')
             .select('photo_urls')
             .eq('id', jobId)
@@ -64,7 +55,7 @@ export async function POST(req: NextRequest) {
 
         const newUrls = [...(jobData?.photo_urls || []), publicUrl]
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('jobs')
             .update({ photo_urls: newUrls })
             .eq('id', jobId)

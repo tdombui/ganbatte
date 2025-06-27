@@ -44,28 +44,35 @@ export async function getCurrentUser(): Promise<UserWithProfile | null> {
       return null
     }
 
+    console.log('🔍 getCurrentUser: Profile found, checking role:', profile.role)
+
     // Get customer data if user is a customer
     let customer: Customer | undefined
     if (profile.role === 'customer') {
+      console.log('🔍 getCurrentUser: Getting customer data')
       const { data: customerData } = await supabase
         .from('customers')
         .select('*')
         .eq('id', user.id)
         .single()
       customer = customerData || undefined
+      console.log('🔍 getCurrentUser: Customer data result:', !!customer)
     }
 
     // Get staff data if user is staff
     let staff: Staff | undefined
     if (profile.role === 'staff' || profile.role === 'admin') {
+      console.log('🔍 getCurrentUser: Getting staff data')
       const { data: staffData } = await supabase
         .from('staff')
         .select('*')
         .eq('id', user.id)
         .single()
       staff = staffData || undefined
+      console.log('🔍 getCurrentUser: Staff data result:', !!staff)
     }
 
+    console.log('🔍 getCurrentUser: Returning user with profile')
     return {
       id: user.id,
       email: profile.email,
@@ -77,7 +84,7 @@ export async function getCurrentUser(): Promise<UserWithProfile | null> {
       staff,
     }
   } catch (error) {
-    console.error('Error getting current user:', error)
+    console.error('❌ Error getting current user:', error)
     return null
   }
 }
