@@ -8,6 +8,7 @@ import MultiLegForm from '@/app/components/ui/job/MultiLegForm'
 import { useAuth } from '../../hooks/useAuth'
 import AuthModal from '../components/auth/AuthModal'
 import { supabase } from '../../lib/auth'
+import Link from 'next/link'
 
 // Function to convert markdown bold to HTML
 function parseMarkdownBold(text: string): string {
@@ -289,6 +290,49 @@ export default function ChatPage() {
         </div>
     )
 
+    // Function to render job links properly
+    function renderJobLink(content: string) {
+        if (!content.includes('/job/')) {
+            return (
+                <div 
+                    className="whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{
+                        __html: parseMarkdownBold(content)
+                    }}
+                />
+            )
+        }
+
+        // Split content by job links and render each part
+        const parts = content.split(/(\/job\/[a-z0-9\-]+)/gi)
+        return (
+            <div className="whitespace-pre-wrap">
+                {parts.map((part, index) => {
+                    if (part.match(/^\/job\/[a-z0-9\-]+$/i)) {
+                        const jobId = part.split('/job/')[1]
+                        return (
+                            <Link
+                                key={index}
+                                href={`/job/${jobId}`}
+                                className="underline text-blue-200 hover:text-blue-100 transition-colors"
+                            >
+                                {part}
+                            </Link>
+                        )
+                    }
+                    return (
+                        <span
+                            key={index}
+                            dangerouslySetInnerHTML={{
+                                __html: parseMarkdownBold(part)
+                            }}
+                        />
+                    )
+                })}
+            </div>
+        )
+    }
+
     // Show loading state while checking authentication
     if (authLoading) {
         return (
@@ -370,23 +414,7 @@ export default function ChatPage() {
                                                         ? 'bg-blue-500 text-white rounded-br-md' 
                                                         : 'bg-gray-600 text-white rounded-bl-md'
                                                 }`}>
-                                                    {content.includes('/job/') ? (
-                                                        <span
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: content.replace(
-                                                                    /(\/job\/[a-z0-9\-]+)/gi,
-                                                                    `<a href="$1" class="underline text-blue-200">$1</a>`
-                                                                ),
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div 
-                                                            className="whitespace-pre-wrap"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: parseMarkdownBold(content)
-                                                            }}
-                                                        />
-                                                    )}
+                                                    {renderJobLink(content)}
                                                 </div>
                                                 
                                                 {/* Message tail */}
@@ -479,12 +507,12 @@ export default function ChatPage() {
                                         <div className="flex items-center justify-between mb-4">
                                             <h2 className="font-bold text-lg text-white">Job Overview</h2>
                                             {savedJob?.id && (
-                                                <a
+                                                <Link
                                                     href={`/job/${savedJob.id}`}
                                                     className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium"
                                                 >
                                                     View Job
-                                                </a>
+                                                </Link>
                                             )}
                                         </div>
 
