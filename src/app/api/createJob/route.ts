@@ -83,6 +83,20 @@ export async function POST(req: Request) {
         }
 
         console.log('🔍 Job created successfully:', data[0])
+        
+        // Verify the job was actually saved
+        const { data: verifyJob, error: verifyError } = await supabase
+            .from('jobs')
+            .select('*')
+            .eq('id', data[0].id)
+            .single()
+            
+        if (verifyError) {
+            console.error('🔥 Job verification failed:', verifyError)
+        } else {
+            console.log('🔍 Job verified in database:', verifyJob.id)
+        }
+        
         return NextResponse.json({ job: data[0] })
     } catch (err) {
         console.error('🔥 /api/createJob error:', err)
