@@ -169,6 +169,7 @@ export default function ChatPage() {
 
                 setParsedJob(null)
                 setAwaitingConfirmation(false)
+                setIsLoading(false)
                 return
             }
 
