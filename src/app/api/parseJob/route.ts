@@ -6,6 +6,7 @@ import { normalizeDeadline } from '@/lib/normalizeDeadline'
 
 export async function POST(req: Request) {
     try {
+        console.log('🔍 ParseJob: Starting request...')
         const { text, history, overrideField } = await req.json()
 
         console.log('🔍 ParseJob request:', { text, overrideField, historyLength: history?.length || 0 })
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
         
         // Try to extract existing job data from history
         if (overrideField && history) {
+            console.log('🔍 ParseJob: Processing override field:', overrideField)
             const historyLines = history.split('\n')
             for (let i = historyLines.length - 1; i >= 0; i--) {
                 const line = historyLines[i]
@@ -41,6 +43,7 @@ export async function POST(req: Request) {
             }
         }
 
+        console.log('🔍 ParseJob: Building prompt...')
         const prompt = `
 You're an assistant for a parts delivery service called Ganbatte. When a customer sends a message, your job is to extract these fields and return them as JSON only — no backticks, no markdown, no explanations.
 
@@ -74,12 +77,14 @@ Examples of deadline extraction:
 - "urgent delivery" → deadline: "urgent delivery"
 `
 
+        console.log('🔍 ParseJob: Calling OpenAI...')
         const completion = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
         })
 
+        console.log('🔍 ParseJob: OpenAI response received')
         const content = completion.choices[0].message.content || ''
         const cleanJson = content
             .replace(/^```json\s*/, '')
@@ -100,6 +105,7 @@ Examples of deadline extraction:
         console.log('🔍 Final parsed job data:', parsed)
 
         // Validate pickup and dropoff
+        console.log('🔍 ParseJob: Validating addresses...')
         const pickupCheck = await validateAddress(parsed.pickup)
         const dropoffCheck = await validateAddress(parsed.dropoff)
 
@@ -109,6 +115,7 @@ Examples of deadline extraction:
         })
 
         // Normalize deadline
+        console.log('🔍 ParseJob: Normalizing deadline...')
         const normalized = normalizeDeadline(parsed.deadline ?? '')
         parsed.deadline = normalized.iso
         parsed.deadlineDisplay = normalized.display
