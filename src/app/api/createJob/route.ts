@@ -74,6 +74,8 @@ export async function POST(req: Request) {
         }
 
         console.log('🔍 Inserting job with payload:', insertPayload)
+        console.log('🔍 User ID being used:', user.id)
+        console.log('🔍 Profile role:', profile?.role)
 
         const { data, error } = await supabase.from('jobs').insert([insertPayload]).select()
 
