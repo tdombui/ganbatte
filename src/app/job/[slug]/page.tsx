@@ -30,6 +30,7 @@ export default function JobPage() {
         async function fetchJob() {
             try {
                 console.log('🔍 Looking for job with ID:', slug)
+                console.log('🔍 USING NEW getJob API - this should appear if new code is running')
 
                 const res = await fetch(`/api/getJob?id=${slug}`)
                 console.log('🔍 getJob response status:', res.status)
