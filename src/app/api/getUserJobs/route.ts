@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../lib/auth'
+import { supabaseAdmin } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
     try {
@@ -10,24 +10,27 @@ export async function GET(request: NextRequest) {
         }
 
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
         
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        console.log('🔍 Getting jobs for user:', user.id)
+
         // Get user's jobs
-        const { data: jobs, error } = await supabase
+        const { data: jobs, error } = await supabaseAdmin
             .from('jobs')
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
 
         if (error) {
-            console.error('❌ Get user jobs error:', error)
+            console.error('❌ Error fetching jobs:', error)
             return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 })
         }
 
+        console.log('✅ Found jobs:', jobs?.length || 0)
         return NextResponse.json({
             success: true,
             jobs: jobs || [],
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
         })
 
     } catch (error) {
-        console.error('Get user jobs error:', error)
+        console.error('❌ Unexpected error:', error)
         return NextResponse.json({ 
             error: 'Internal server error',
             details: error instanceof Error ? error.message : 'Unknown error'

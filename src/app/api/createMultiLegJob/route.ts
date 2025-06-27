@@ -1,6 +1,6 @@
 // src/app/api/createMultiLegJob/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/auth'
 
 interface Leg {
     part: string
@@ -20,11 +20,6 @@ interface RouteLeg {
     duration?: { value: number }
 }
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // only use on server
-)
-
 async function fetchMultiLegRouteInfo(legs: Leg[]) {
     if (!legs || legs.length < 1) return { distance_meters: null, duration_seconds: null }
     const origin = legs[0].pickup
@@ -43,61 +38,81 @@ async function fetchMultiLegRouteInfo(legs: Leg[]) {
 }
 
 export async function POST(req: NextRequest) {
-    const body = await req.json()
-    console.log('📦 Received job payload:', body)
+    try {
+        const authHeader = req.headers.get('authorization')
+        if (!authHeader) {
+            return NextResponse.json({ error: 'No authorization header' }, { status: 401 })
+        }
 
-    const { parts, deadline, legs } = body
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+        
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+        }
 
-    const geocodeAddress = async (address: string) => {
-        // California center coordinates for biasing
-        const californiaCenter = '36.7783,-119.4179'
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&location=${californiaCenter}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        const body = await req.json()
+        console.log('📦 Received job payload:', body)
+
+        const { parts, deadline, legs } = body
+
+        const geocodeAddress = async (address: string) => {
+            // California center coordinates for biasing
+            const californiaCenter = '36.7783,-119.4179'
+            const res = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&location=${californiaCenter}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+            )
+            const data = await res.json()
+            return data.results?.[0]?.geometry?.location || null
+        }
+
+        const enrichedLegs = await Promise.all(
+            legs.map(async (leg: Leg): Promise<EnrichedLeg> => {
+                const pickupGeo = await geocodeAddress(leg.pickup)
+                const dropoffGeo = await geocodeAddress(leg.dropoff)
+
+                return {
+                    ...leg,
+                    pickup_lat: pickupGeo?.lat ?? null,
+                    pickup_lng: pickupGeo?.lng ?? null,
+                    dropoff_lat: dropoffGeo?.lat ?? null,
+                    dropoff_lng: dropoffGeo?.lng ?? null,
+                }
+            })
         )
-        const data = await res.json()
-        return data.results?.[0]?.geometry?.location || null
-    }
 
-    const enrichedLegs = await Promise.all(
-        legs.map(async (leg: Leg): Promise<EnrichedLeg> => {
-            const pickupGeo = await geocodeAddress(leg.pickup)
-            const dropoffGeo = await geocodeAddress(leg.dropoff)
+        // Fetch route info for the full multi-leg route
+        const { distance_meters, duration_seconds } = await fetchMultiLegRouteInfo(legs)
 
-            return {
-                ...leg,
-                pickup_lat: pickupGeo?.lat ?? null,
-                pickup_lng: pickupGeo?.lng ?? null,
-                dropoff_lat: dropoffGeo?.lat ?? null,
-                dropoff_lng: dropoffGeo?.lng ?? null,
-            }
+        const { data, error } = await supabaseAdmin
+            .from('jobs')
+            .insert([
+                {
+                    user_id: user.id,
+                    parts,
+                    deadline,
+                    legs: enrichedLegs,
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    distance_meters,
+                    duration_seconds,
+                },
+            ])
+            .select()
+
+        if (error) {
+            console.error('❌ Supabase error:', error)
+            return NextResponse.json({ error: 'Insert failed', details: error }, { status: 500 })
+        }
+
+        console.log('✅ Job created successfully:', data?.[0]?.id)
+        return NextResponse.json({
+            success: true,
+            jobId: data?.[0]?.id ?? null,
         })
-    )
 
-    // Fetch route info for the full multi-leg route
-    const { distance_meters, duration_seconds } = await fetchMultiLegRouteInfo(legs)
-
-    const { data, error } = await supabase
-        .from('jobs')
-        .insert([
-            {
-                parts,
-                deadline,
-                legs: enrichedLegs, // ✅ now you're inserting the correct data
-                status: 'pending',
-                created_at: new Date().toISOString(),
-                distance_meters,
-                duration_seconds,
-            },
-        ])
-        .select()
-
-    if (error) {
-        console.error('❌ Supabase error:', error)
-        return NextResponse.json({ error: 'Insert failed', details: error }, { status: 500 })
+    } catch (error) {
+        console.error('❌ Unexpected error:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
-
-    return NextResponse.json({
-        success: true,
-        jobId: data?.[0]?.id ?? null,
-    })
 }

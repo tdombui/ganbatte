@@ -1,17 +1,8 @@
 // /api/createJob/route.ts
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/auth'
 import { ParsedJob } from '@/types/job'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function fetchRouteInfo(pickup: string, dropoff: string) {
     if (!pickup || !dropoff) return { distance_meters: null, duration_seconds: null }
@@ -40,7 +31,7 @@ export async function POST(req: Request) {
 
         // Verify the user token and get user info
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
         
         if (authError || !user) {
             console.log('❌ Auth error:', authError)
@@ -53,7 +44,7 @@ export async function POST(req: Request) {
         const { distance_meters, duration_seconds } = await fetchRouteInfo(job.pickup, job.dropoff)
 
         // Get user profile to determine customer_id
-        const { data: profile } = await supabase
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('role')
             .eq('id', user.id)
@@ -77,7 +68,7 @@ export async function POST(req: Request) {
         console.log('🔍 User ID being used:', user.id)
         console.log('🔍 Profile role:', profile?.role)
 
-        const { data, error } = await supabase.from('jobs').insert([insertPayload]).select()
+        const { data, error } = await supabaseAdmin.from('jobs').insert([insertPayload]).select()
 
         if (error) {
             console.error('🔥 Supabase insert error:', error)
@@ -87,7 +78,7 @@ export async function POST(req: Request) {
         console.log('🔍 Job created successfully:', data[0])
         
         // Verify the job was actually saved
-        const { data: verifyJob, error: verifyError } = await supabase
+        const { data: verifyJob, error: verifyError } = await supabaseAdmin
             .from('jobs')
             .select('*')
             .eq('id', data[0].id)
