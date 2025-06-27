@@ -7,21 +7,24 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('🔍 useAuth: Starting auth check...')
     // Get initial session
     checkUser()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id)
+      console.log('🔍 useAuth: Auth state changed:', event, session?.user?.id)
       if (session?.user) {
         try {
           const currentUser = await getCurrentUser()
+          console.log('🔍 useAuth: Got current user:', currentUser?.id)
           setUser(currentUser)
         } catch (error) {
-          console.error('Error getting current user after auth change:', error)
+          console.error('🔍 useAuth: Error getting current user after auth change:', error)
           setUser(null)
         }
       } else {
+        console.log('🔍 useAuth: No session, setting user to null')
         setUser(null)
       }
       setLoading(false)
@@ -32,12 +35,15 @@ export function useAuth() {
 
   async function checkUser() {
     try {
+      console.log('🔍 useAuth: checkUser called')
       const currentUser = await getCurrentUser()
+      console.log('🔍 useAuth: checkUser result:', currentUser?.id)
       setUser(currentUser)
     } catch (error) {
-      console.error('Error checking user:', error)
+      console.error('🔍 useAuth: Error checking user:', error)
       setUser(null)
     } finally {
+      console.log('🔍 useAuth: Setting loading to false')
       setLoading(false)
     }
   }

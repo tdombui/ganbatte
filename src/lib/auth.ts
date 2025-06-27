@@ -18,11 +18,17 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || sup
 
 export async function getCurrentUser(): Promise<UserWithProfile | null> {
   try {
+    console.log('🔍 getCurrentUser: Starting...')
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
+    console.log('🔍 getCurrentUser: Auth result:', { user: user?.id, error: authError?.message })
+    
     if (authError || !user) {
+      console.log('🔍 getCurrentUser: No user or auth error')
       return null
     }
+
+    console.log('🔍 getCurrentUser: Getting profile for user:', user.id)
 
     // Get profile data
     const { data: profile, error: profileError } = await supabase
@@ -31,7 +37,10 @@ export async function getCurrentUser(): Promise<UserWithProfile | null> {
       .eq('id', user.id)
       .single()
 
+    console.log('🔍 getCurrentUser: Profile result:', { profile: profile?.id, error: profileError?.message })
+
     if (profileError || !profile) {
+      console.log('🔍 getCurrentUser: No profile found')
       return null
     }
 
