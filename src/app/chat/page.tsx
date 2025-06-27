@@ -18,11 +18,44 @@ function parseMarkdownBold(text: string): string {
 
 // Helper function to get auth headers
 async function getAuthHeaders() {
-    // Get the session from the current auth state instead of creating a new client call
-    const { data: { session } } = await supabase.auth.getSession()
-    return {
-        'Content-Type': 'application/json',
-        ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+    try {
+        // Get the session from the current auth state instead of creating a new client call
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+            console.error('🔍 getAuthHeaders: Session error:', error)
+            throw error
+        }
+        
+        if (!session) {
+            console.error('🔍 getAuthHeaders: No session found')
+            throw new Error('No active session')
+        }
+        
+        // Check if token is expired and refresh if needed
+        const now = Math.floor(Date.now() / 1000)
+        if (session.expires_at && session.expires_at < now) {
+            console.log('🔍 getAuthHeaders: Token expired, refreshing...')
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+            
+            if (refreshError || !refreshedSession) {
+                console.error('🔍 getAuthHeaders: Failed to refresh session:', refreshError)
+                throw new Error('Failed to refresh session')
+            }
+            
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${refreshedSession.access_token}`
+            }
+        }
+        
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+        }
+    } catch (error) {
+        console.error('🔍 getAuthHeaders: Error getting auth headers:', error)
+        throw error
     }
 }
 
@@ -67,6 +100,9 @@ export default function ChatPage() {
         if (!authLoading && !isAuthenticated) {
             console.log('🔍 Showing auth modal - user not authenticated')
             setShowAuthModal(true)
+        } else if (!authLoading && isAuthenticated) {
+            console.log('🔍 User authenticated, hiding auth modal')
+            setShowAuthModal(false)
         }
     }, [authLoading, isAuthenticated])
 
@@ -78,6 +114,29 @@ export default function ChatPage() {
             setMessages([welcomeMessage])
         }
     }, [isAuthenticated, user, messages.length])
+
+    // Add session persistence check for mobile
+    useEffect(() => {
+        const checkSessionPersistence = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                console.log('🔍 Session persistence check:', { hasSession: !!session, userId: session?.user?.id })
+                
+                if (!session && isAuthenticated) {
+                    console.log('🔍 Session lost but user state shows authenticated, refreshing...')
+                    // Force a re-check of authentication state
+                    window.location.reload()
+                }
+            } catch (error) {
+                console.error('🔍 Session persistence check error:', error)
+            }
+        }
+
+        // Check session persistence every 30 seconds on mobile
+        const interval = setInterval(checkSessionPersistence, 30000)
+        
+        return () => clearInterval(interval)
+    }, [isAuthenticated])
 
     const handleSignOut = async () => {
         await logout()
@@ -114,6 +173,13 @@ export default function ChatPage() {
                         body: JSON.stringify(parsedJob),
                     })
 
+                    if (res.status === 401) {
+                        console.error('❌ Authentication error in createJob')
+                        setMessages((prev) => [...prev, `ai:Your session has expired. Please refresh the page and try again.`])
+                        setShowAuthModal(true)
+                        return
+                    }
+
                     if (res.ok) {
                         const { job } = await res.json()
                         console.log('🔍 Job created successfully:', job)
@@ -125,11 +191,16 @@ export default function ChatPage() {
                     } else {
                         const errorText = await res.text()
                         console.error('❌ Failed to save job:', res.status, errorText)
-                        setMessages((prev) => [...prev, `ai:Failed to save job.`])
+                        setMessages((prev) => [...prev, `ai:Failed to save job. Please try again.`])
                     }
                 } catch (err) {
                     console.error('❌ saveJob error:', err)
-                    setMessages((prev) => [...prev, `ai:Failed to save job.`])
+                    if (err instanceof Error && err.message.includes('session')) {
+                        setMessages((prev) => [...prev, `ai:Your session has expired. Please refresh the page and try again.`])
+                        setShowAuthModal(true)
+                    } else {
+                        setMessages((prev) => [...prev, `ai:Failed to save job. Please try again.`])
+                    }
                 }
                 setAwaitingConfirmation(false)
                 return
@@ -157,6 +228,20 @@ export default function ChatPage() {
                     overrideField,
                 }),
             })
+
+            if (res.status === 401) {
+                console.error('❌ Authentication error in parseJob')
+                setMessages((prev) => [...prev, 'ai:Your session has expired. Please refresh the page and try again.'])
+                setShowAuthModal(true)
+                return
+            }
+
+            if (!res.ok) {
+                const errorText = await res.text()
+                console.error('❌ parseJob API error:', res.status, errorText)
+                setMessages((prev) => [...prev, 'ai:Sorry, there was an error processing your request. Please try again.'])
+                return
+            }
 
             const data = await res.json()
 
@@ -201,7 +286,12 @@ export default function ChatPage() {
             }
         } catch (err) {
             console.error('❌ parseJob error:', err)
-            setMessages((prev) => [...prev, 'ai:Internal server error.'])
+            if (err instanceof Error && err.message.includes('session')) {
+                setMessages((prev) => [...prev, 'ai:Your session has expired. Please refresh the page and try again.'])
+                setShowAuthModal(true)
+            } else {
+                setMessages((prev) => [...prev, 'ai:Sorry, there was an error processing your request. Please try again.'])
+            }
         } finally {
             setIsLoading(false)
         }
@@ -220,6 +310,13 @@ export default function ChatPage() {
                     body: JSON.stringify(parsedJob),
                 })
 
+                if (res.status === 401) {
+                    console.error('❌ Authentication error in handleConfirmation')
+                    setMessages((prev) => [...prev, `ai:Your session has expired. Please refresh the page and try again.`])
+                    setShowAuthModal(true)
+                    return
+                }
+
                 if (res.ok) {
                     const { job } = await res.json()
                     console.log('🔍 Job created successfully:', job)
@@ -231,11 +328,16 @@ export default function ChatPage() {
                 } else {
                     const errorText = await res.text()
                     console.error('❌ Failed to save job:', res.status, errorText)
-                    setMessages((prev) => [...prev, `ai:Failed to save job.`])
+                    setMessages((prev) => [...prev, `ai:Failed to save job. Please try again.`])
                 }
             } catch (err) {
                 console.error('❌ saveJob error:', err)
-                setMessages((prev) => [...prev, `ai:Failed to save job.`])
+                if (err instanceof Error && err.message.includes('session')) {
+                    setMessages((prev) => [...prev, `ai:Your session has expired. Please refresh the page and try again.`])
+                    setShowAuthModal(true)
+                } else {
+                    setMessages((prev) => [...prev, `ai:Failed to save job. Please try again.`])
+                }
             }
         } else {
             setMessages((prev) => [

@@ -10,8 +10,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
-// Client for client-side operations (uses anon key)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Client for client-side operations (uses anon key) with enhanced session persistence
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Enable automatic session refresh
+    autoRefreshToken: true,
+    // Persist session across browser sessions
+    persistSession: true,
+    // Detect session in URL (for auth callbacks)
+    detectSessionInUrl: true,
+    // Use localStorage for session storage (more reliable than sessionStorage)
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    // Storage key for the session
+    storageKey: 'ganbatte-auth-token',
+    // Flow type for authentication
+    flowType: 'pkce',
+  },
+  // Global headers for all requests
+  global: {
+    headers: {
+      'X-Client-Info': 'ganbatte-web',
+    },
+  },
+})
 
 // Admin client for server-side operations (uses service role key)
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey)
