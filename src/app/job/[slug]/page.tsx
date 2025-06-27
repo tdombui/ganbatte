@@ -31,37 +31,27 @@ export default function JobPage() {
             try {
                 console.log('🔍 Looking for job with ID:', slug)
 
-                const res = await fetch(`/api/getUserJobs`)
-                console.log('🔍 getUserJobs response status:', res.status)
+                const res = await fetch(`/api/getJob?id=${slug}`)
+                console.log('🔍 getJob response status:', res.status)
                 
                 if (!res.ok) {
                     const errorText = await res.text()
-                    console.error('❌ Failed to fetch jobs:', res.status, errorText)
+                    console.error('❌ Failed to fetch job:', res.status, errorText)
                     setError(`Failed to load job (${res.status})`)
                     return
                 }
 
                 const data = await res.json()
-                console.log('🔍 getUserJobs response:', data)
+                console.log('🔍 getJob response:', data)
                 
                 if (!data.success) {
-                    console.error('❌ getUserJobs returned error:', data.error)
+                    console.error('❌ getJob returned error:', data.error)
                     setError(data.error || 'Failed to load job')
                     return
                 }
 
-                const foundJob = data.jobs.find((j: ParsedJob) => j.id === slug)
-                console.log('🔍 Found job:', foundJob ? foundJob.id : 'Not found')
-                console.log('🔍 All jobs:', data.jobs.map((j: ParsedJob) => j.id))
-
-                if (!foundJob) {
-                    console.log('❌ Job not found:', slug)
-                    setError('Job not found')
-                    return
-                }
-
-                console.log('✅ Job found:', foundJob.id, foundJob.status)
-                setJob(foundJob)
+                console.log('✅ Job found:', data.job.id, data.job.status)
+                setJob(data.job)
             } catch (err) {
                 console.error('❌ Job fetch error:', err)
                 setError('Failed to load job')
