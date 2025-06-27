@@ -5,7 +5,7 @@ import SingleLegJobView from '@/app/job/views/SingleLegJobView'
 import MultiLegJobView from '@/app/job/views/MultiLegJobView'
 import StaffActions from './StaffActions'
 import { ParsedJob, JobLeg } from '@/types/job'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '@/lib/auth'
 import Navbar from '@/app/components/nav/Navbar'
 
 interface MultiLegJob extends Omit<ParsedJob, 'deadline' | 'status'> {

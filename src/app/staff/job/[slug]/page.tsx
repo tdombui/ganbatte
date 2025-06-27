@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import StaffJobView from './StaffJobView'
 

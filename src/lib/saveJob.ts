@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/auth'
 import { ParsedJob } from '@/types/job'
 
 export async function saveJobToSupabase(job: ParsedJob) {

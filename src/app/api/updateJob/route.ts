@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { JobLeg } from '@/types/job'
 
