@@ -112,12 +112,15 @@ export default function ChatPage() {
 
                     if (res.ok) {
                         const { job } = await res.json()
+                        console.log('🔍 Job created successfully:', job)
                         setSavedJob(job)
                         setMessages((prev) => [
                             ...prev,
                             `ai:Job booked. View your job here: /job/${job.id}`,
                         ])
                     } else {
+                        const errorText = await res.text()
+                        console.error('❌ Failed to save job:', res.status, errorText)
                         setMessages((prev) => [...prev, `ai:Failed to save job.`])
                     }
                 } catch (err) {
@@ -214,12 +217,15 @@ export default function ChatPage() {
 
                 if (res.ok) {
                     const { job } = await res.json()
+                    console.log('🔍 Job created successfully:', job)
                     setSavedJob(job)
                     setMessages((prev) => [
                         ...prev,
                         `ai:Job booked. View your job here: /job/${job.id}`,
                     ])
                 } else {
+                    const errorText = await res.text()
+                    console.error('❌ Failed to save job:', res.status, errorText)
                     setMessages((prev) => [...prev, `ai:Failed to save job.`])
                 }
             } catch (err) {

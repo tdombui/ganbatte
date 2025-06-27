@@ -29,10 +29,12 @@ async function fetchRouteInfo(pickup: string, dropoff: string) {
 export async function POST(req: Request) {
     try {
         const job: ParsedJob = await req.json()
+        console.log('🔍 Creating job:', job)
 
         // Get the user ID from the request headers (set by the client)
         const authHeader = req.headers.get('authorization')
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('❌ No auth header found')
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -41,8 +43,11 @@ export async function POST(req: Request) {
         const { data: { user }, error: authError } = await supabase.auth.getUser(token)
         
         if (authError || !user) {
+            console.log('❌ Auth error:', authError)
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+
+        console.log('🔍 User authenticated:', user.id)
 
         // Fetch route info
         const { distance_meters, duration_seconds } = await fetchRouteInfo(job.pickup, job.dropoff)
@@ -68,6 +73,8 @@ export async function POST(req: Request) {
             customer_id: profile?.role === 'customer' ? user.id : null, // Set customer_id if user is customer
         }
 
+        console.log('🔍 Inserting job with payload:', insertPayload)
+
         const { data, error } = await supabase.from('jobs').insert([insertPayload]).select()
 
         if (error) {
@@ -75,6 +82,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Failed to save job' }, { status: 500 })
         }
 
+        console.log('🔍 Job created successfully:', data[0])
         return NextResponse.json({ job: data[0] })
     } catch (err) {
         console.error('🔥 /api/createJob error:', err)

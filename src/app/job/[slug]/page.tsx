@@ -32,14 +32,27 @@ export default function JobPage() {
                 console.log('🔍 Looking for job with ID:', slug)
 
                 const res = await fetch(`/api/getUserJobs`)
+                console.log('🔍 getUserJobs response status:', res.status)
+                
                 if (!res.ok) {
-                    console.error('❌ Failed to fetch jobs:', res.status)
-                    setError('Failed to load job')
+                    const errorText = await res.text()
+                    console.error('❌ Failed to fetch jobs:', res.status, errorText)
+                    setError(`Failed to load job (${res.status})`)
                     return
                 }
 
-                const { jobs } = await res.json()
-                const foundJob = jobs.find((j: ParsedJob) => j.id === slug)
+                const data = await res.json()
+                console.log('🔍 getUserJobs response:', data)
+                
+                if (!data.success) {
+                    console.error('❌ getUserJobs returned error:', data.error)
+                    setError(data.error || 'Failed to load job')
+                    return
+                }
+
+                const foundJob = data.jobs.find((j: ParsedJob) => j.id === slug)
+                console.log('🔍 Found job:', foundJob ? foundJob.id : 'Not found')
+                console.log('🔍 All jobs:', data.jobs.map((j: ParsedJob) => j.id))
 
                 if (!foundJob) {
                     console.log('❌ Job not found:', slug)
