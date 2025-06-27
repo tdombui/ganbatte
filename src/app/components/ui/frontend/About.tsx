@@ -1,7 +1,7 @@
 // components/About.tsx
 export default function About() {
     return (
-        <section className="py-20 px-6 bg-black text-white font-sans">
+        <section className="py-12 md:py-20 px-6 bg-black text-white font-sans">
             <div className="max-w-3xl mx-auto text-center space-y-6">
                 <h2 className="text-3xl md:text-4xl font-bold">What is Ganbatte?</h2>
                 <p className="text-gray-300 text-lg">

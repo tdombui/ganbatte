@@ -89,17 +89,17 @@ export default function HomePage() {
       </section>
 
       {/* ABOUT */}
-      <section className="snap-start h-screen flex items-center justify-center px-6">
+      <section className="snap-start min-h-screen flex items-center justify-center px-6 py-8">
         <About />
       </section>
 
       {/* PRICING */}
-      <section className="snap-start h-screen flex items-center justify-center px-6">
+      <section className="snap-start min-h-screen flex items-center justify-center px-6 py-8">
         <Pricing />
       </section>
 
       {/* FOOTER */}
-      <section className="snap-start h-screen flex flex-col justify-center items-center px-6 text-center text-sm text-gray-500">
+      <section className="snap-start min-h-screen flex flex-col justify-center items-center px-6 py-8 text-center text-sm text-gray-500">
         &copy; {new Date().getFullYear()} Ganbatte Payload Movers 🏁
       </section>
     </main>
