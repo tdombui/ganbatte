@@ -80,9 +80,19 @@ export default function MultiLegForm() {
         setErrors({})
         const payload = { parts, deadline, legs }
         try {
+            // Get auth headers
+            const { data: { session } } = await import('@/lib/auth').then(m => m.supabase.auth.getSession())
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            }
+            
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`
+            }
+
             const res = await fetch('/api/createMultiLegJob', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(payload),
             })
             const data = await res.json()
