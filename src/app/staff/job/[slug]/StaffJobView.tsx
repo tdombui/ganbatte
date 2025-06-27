@@ -20,14 +20,21 @@ function isMultiLegJob(job: JobType): job is MultiLegJob {
     return 'legs' in job && Array.isArray(job.legs);
 }
 
-export default function StaffJobView({ job: initialJob }: { job: JobType }) {
+export default function StaffJobView({ job: initialJob, isStaff }: { job: JobType; isStaff: boolean }) {
     const [job, setJob] = useState(initialJob)
     const [uploading, setUploading] = useState(false)
 
     const handleStatusChange = async (newStatus: string) => {
+        // Get the current session token
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const res = await fetch('/api/updateJob', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 jobId: job.id,
                 updates: { status: newStatus },
@@ -37,6 +44,8 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         if (res.ok) {
             setJob(prev => ({ ...prev, status: newStatus }))
         } else {
+            const errorData = await res.json().catch(() => ({}))
+            console.error('Failed to update status:', errorData)
             alert('Failed to update status.')
         }
     }
@@ -66,9 +75,15 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         }
 
         // 3. Call API to update the jobs table
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const res = await fetch('/api/updateJob', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 jobId: job.id,
                 updates: { photo_urls: [...(job.photo_urls || []), publicUrl] }
@@ -78,6 +93,8 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         if (res.ok) {
             setJob(prev => ({ ...prev, photo_urls: [...(prev.photo_urls || []), publicUrl] }))
         } else {
+            const errorData = await res.json().catch(() => ({}))
+            console.error('Failed to update job with photo URL:', errorData)
             alert('Failed to update job with photo URL')
         }
         setUploading(false)
@@ -86,9 +103,15 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
     const handleDeletePhoto = async (url: string) => {
         if (!window.confirm("Are you sure you want to delete this photo?")) return
 
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const res = await fetch('/api/deleteJobPhoto', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ jobId: job.id, photoUrl: url }),
         });
 
@@ -96,14 +119,22 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
             setJob(prev => ({ ...prev, photo_urls: (prev.photo_urls || []).filter(u => u !== url) }))
         } else {
             const { error } = await res.json()
+            console.error('Failed to delete photo:', error)
             alert(`Failed to delete photo: ${error}`)
         }
     }
 
     const handleStartJob = async () => {
+        // Get the current session token
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const res = await fetch('/api/updateJob', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 jobId: job.id,
                 updates: { status: 'active' },
@@ -112,14 +143,23 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         if (res.ok) {
             setJob(prev => ({ ...prev, status: 'active' }))
         } else {
+            const errorData = await res.json().catch(() => ({}))
+            console.error('Failed to start job:', errorData)
             alert('Failed to start job.')
         }
     }
 
     const handlePauseJob = async () => {
+        // Get the current session token
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const res = await fetch('/api/updateJob', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 jobId: job.id,
                 updates: { status: 'booked' },
@@ -128,6 +168,8 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
         if (res.ok) {
             setJob(prev => ({ ...prev, status: 'booked' }))
         } else {
+            const errorData = await res.json().catch(() => ({}))
+            console.error('Failed to pause/stop job:', errorData)
             alert('Failed to pause/stop job.')
         }
     }
@@ -141,17 +183,22 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
 
     // Driver-side GPS tracking
     useEffect(() => {
-        // Only track if job is currently driving and user is staff (add your own staff check logic)
+        // Only track if job is currently driving and user is staff
         if (job.status !== 'currently driving') return
         if (typeof window === 'undefined' || !('geolocation' in navigator)) return
-        // TODO: Replace with real staff/driver check
-        const isStaff = true
         if (!isStaff) return
+        
         const watchId = navigator.geolocation.watchPosition(
-            (position) => {
+            async (position) => {
+                const { data: { session } } = await supabase.auth.getSession()
+                const token = session?.access_token
+
                 fetch('/api/updateDriverLocation', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         jobId: job.id,
                         latitude: position.coords.latitude,
@@ -165,7 +212,18 @@ export default function StaffJobView({ job: initialJob }: { job: JobType }) {
             { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
         )
         return () => navigator.geolocation.clearWatch(watchId)
-    }, [job.id, job.status])
+    }, [job.id, job.status, isStaff])
+
+    if (!isStaff) {
+        return (
+            <>
+                <Navbar />
+                <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+                    <div className="text-white text-lg">Access denied</div>
+                </div>
+            </>
+        )
+    }
 
     return (
         <>

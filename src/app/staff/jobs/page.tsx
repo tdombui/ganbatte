@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import Navbar from '@/app/components/nav/Navbar'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/auth'
 
 type Leg = {
   pickup?: string
@@ -66,25 +68,78 @@ function getJobEarliestDeadline(job: Job) {
 }
 
 export default function StaffJobsList() {
+  const { user, loading } = useAuth()
   const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingJobs, setLoadingJobs] = useState(true)
+  
+  // Derive staff status from user role
+  const isStaff = user?.role === 'staff' || user?.role === 'admin'
 
   useEffect(() => {
-    fetch('/api/getAllJobs')
-      .then(res => res.json())
-      .then(data => {
-        setJobs((data.jobs || []).sort((a: Job, b: Job) => {
-          const aDeadline = getJobEarliestDeadline(a)
-          const bDeadline = getJobEarliestDeadline(b)
-          const aTime = aDeadline ? new Date(aDeadline).getTime() : Infinity
-          const bTime = bDeadline ? new Date(bDeadline).getTime() : Infinity
-          return aTime - bTime
-        }))
-        setLoading(false)
-      })
-  }, [])
+    if (!loading && !isStaff) {
+      // Redirect non-staff users
+      window.location.href = '/'
+      return
+    }
 
-  if (loading) return <div>Loading...</div>
+    if (isStaff) {
+      fetchJobs()
+    }
+  }, [loading, isStaff])
+
+  const fetchJobs = async () => {
+    try {
+      console.log('🔍 Fetching jobs directly from Supabase...')
+      
+      // Get all jobs directly from Supabase (staff can see all jobs due to RLS policies)
+      const { data: jobs, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Error fetching jobs:', error)
+        return
+      }
+
+      console.log('✅ Found jobs:', jobs?.length || 0)
+      
+      setJobs((jobs || []).sort((a: Job, b: Job) => {
+        const aDeadline = getJobEarliestDeadline(a)
+        const bDeadline = getJobEarliestDeadline(b)
+        const aTime = aDeadline ? new Date(aDeadline).getTime() : Infinity
+        const bTime = bDeadline ? new Date(bDeadline).getTime() : Infinity
+        return aTime - bTime
+      }))
+      
+    } catch (error) {
+      console.error('Error fetching jobs:', error)
+    } finally {
+      setLoadingJobs(false)
+    }
+  }
+
+  if (loading || loadingJobs) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+          <div className="text-white text-lg">Loading...</div>
+        </div>
+      </>
+    )
+  }
+
+  if (!isStaff) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+          <div className="text-white text-lg">Access denied</div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>

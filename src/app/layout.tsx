@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ganbatte Part Sprinter",
+  title: "Ganbatte Payload Movers",
   description: "AI-powered parts delivery service for auto builders, shops and tuners. Anywhere in SoCal.",
 };
 

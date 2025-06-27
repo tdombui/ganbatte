@@ -359,7 +359,7 @@ export default function ChatPage() {
                 <div className="mb-6 sm:mb-8 px-4 sm:px-0">
                     {/* Title and settings on same line */}
                     <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <header className="text-lg sm:text-2xl lg:text-3xl font-bold font-sans">Ganbatte Part Sprinter</header>
+                        <header className="text-lg sm:text-2xl lg:text-3xl font-bold font-sans">Ganbatte Payload Movers</header>
                         
                         {/* Settings Dropdown */}
                         {isAuthenticated && (

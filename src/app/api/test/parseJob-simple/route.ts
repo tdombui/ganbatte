@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ job: mockJob })
 
     } catch (err) {
-        console.error('🔥 /api/parseJob-simple error:', err)
+        console.error('🔥 /api/test/parseJob-simple error:', err)
         return NextResponse.json({ error: 'Failed to parse job' }, { status: 500 })
     }
 } 

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { JobLeg } from '@/types/job'
 
 const geocodeAddress = async (address: string) => {
@@ -26,50 +26,84 @@ async function fetchRouteInfo(pickup: string, dropoff: string) {
     }
 }
 
-export async function POST(req: NextRequest) {
-    const { jobId, updates } = await req.json()
+export async function POST(req: Request) {
+    try {
+        // Check authentication
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        
+        if (authError || !user) {
+            console.error('Authentication error:', authError)
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+        }
 
-    if (!jobId || !updates) {
-        return NextResponse.json({ error: 'Missing jobId or updates' }, { status: 400 })
+        // Check if user is staff/admin for job updates
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (profileError || !profile) {
+            console.error('Profile error:', profileError)
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+        }
+
+        const isStaff = profile.role === 'staff' || profile.role === 'admin'
+        if (!isStaff) {
+            return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+        }
+
+        const { jobId, updates } = await req.json()
+
+        if (!jobId || !updates) {
+            return NextResponse.json({ error: 'Missing jobId or updates' }, { status: 400 })
+        }
+
+        console.log('Updating job:', jobId, 'with updates:', updates)
+
+        if (updates.legs && Array.isArray(updates.legs)) {
+            updates.legs = await Promise.all(
+                updates.legs.map(async (leg: JobLeg) => {
+                    const pickupGeo = await geocodeAddress(leg.pickup)
+                    const dropoffGeo = await geocodeAddress(leg.dropoff)
+
+                    return {
+                        ...leg,
+                        pickup_lat: pickupGeo?.lat ?? null,
+                        pickup_lng: pickupGeo?.lng ?? null,
+                        dropoff_lat: dropoffGeo?.lat ?? null,
+                        dropoff_lng: dropoffGeo?.lng ?? null,
+                    }
+                })
+            )
+        }
+
+        // If pickup or dropoff is being updated, fetch and store route info
+        if (updates.pickup || updates.dropoff) {
+            const pickup = updates.pickup
+            const dropoff = updates.dropoff
+            const { distance_meters, duration_seconds } = await fetchRouteInfo(pickup, dropoff)
+            updates.distance_meters = distance_meters
+            updates.duration_seconds = duration_seconds
+        }
+
+        const { data, error } = await supabase
+            .from('jobs')
+            .update(updates)
+            .eq('id', jobId)
+            .select()
+            .single()
+
+        if (error) {
+            console.error('Error updating job:', error)
+            return NextResponse.json({ error: 'Failed to update job', details: error.message }, { status: 500 })
+        }
+
+        console.log('Job updated successfully:', data)
+        return NextResponse.json({ success: true, job: data })
+
+    } catch (error) {
+        console.error('Unexpected error in updateJob:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
-
-    if (updates.legs && Array.isArray(updates.legs)) {
-        updates.legs = await Promise.all(
-            updates.legs.map(async (leg: JobLeg) => {
-                const pickupGeo = await geocodeAddress(leg.pickup)
-                const dropoffGeo = await geocodeAddress(leg.dropoff)
-
-                return {
-                    ...leg,
-                    pickup_lat: pickupGeo?.lat ?? null,
-                    pickup_lng: pickupGeo?.lng ?? null,
-                    dropoff_lat: dropoffGeo?.lat ?? null,
-                    dropoff_lng: dropoffGeo?.lng ?? null,
-                }
-            })
-        )
-    }
-
-    // If pickup or dropoff is being updated, fetch and store route info
-    if (updates.pickup || updates.dropoff) {
-        const pickup = updates.pickup
-        const dropoff = updates.dropoff
-        const { distance_meters, duration_seconds } = await fetchRouteInfo(pickup, dropoff)
-        updates.distance_meters = distance_meters
-        updates.duration_seconds = duration_seconds
-    }
-
-    const { data, error } = await supabase
-        .from('jobs')
-        .update(updates)
-        .eq('id', jobId)
-        .select()
-        .single()
-
-    if (error) {
-        console.error('Error updating job:', error)
-        return NextResponse.json({ error: 'Failed to update job', details: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true, job: data })
 } 

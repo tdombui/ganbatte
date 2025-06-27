@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/auth'
+import { supabase } from '../../../lib/auth'
 
 export default function TestClientPage() {
   const [status, setStatus] = useState('Loading...')
