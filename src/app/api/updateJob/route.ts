@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 import { JobLeg } from '@/types/job'
+import { createClient } from '@supabase/supabase-js'
 
 const geocodeAddress = async (address: string) => {
     if (!address) return null;
@@ -28,8 +29,18 @@ async function fetchRouteInfo(pickup: string, dropoff: string) {
 
 export async function POST(req: Request) {
     try {
-        // Check authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        // Get the authorization header
+        const authHeader = req.headers.get('authorization')
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.error('Missing or invalid authorization header')
+            return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
+        }
+
+        // Extract the token
+        const token = authHeader.replace('Bearer ', '')
+        
+        // Verify the user with the token
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
         
         if (authError || !user) {
             console.error('Authentication error:', authError)
@@ -87,7 +98,20 @@ export async function POST(req: Request) {
             updates.duration_seconds = duration_seconds
         }
 
-        const { data, error } = await supabase
+        // Create a new Supabase client with the user's token for RLS
+        const supabaseWithAuth = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            }
+        )
+
+        const { data, error } = await supabaseWithAuth
             .from('jobs')
             .update(updates)
             .eq('id', jobId)

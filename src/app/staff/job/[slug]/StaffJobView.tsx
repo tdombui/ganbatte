@@ -54,50 +54,78 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
         const file = e.target.files?.[0]
         if (!file) return
 
+        console.log('🔍 Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type })
         setUploading(true)
-        const filePath = `${job.id}/${Date.now()}-${file.name}`
+        
+        try {
+            const filePath = `${job.id}/${Date.now()}-${file.name}`
+            console.log('🔍 File path:', filePath)
 
-        // 1. Upload to Supabase Storage from the browser
-        const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file)
-        if (uploadError) {
-            alert('Upload failed: ' + uploadError.message)
+            // 1. Upload to Supabase Storage from the browser
+            const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file)
+            if (uploadError) {
+                console.error('🔍 Upload error:', uploadError)
+                alert('Upload failed: ' + uploadError.message)
+                setUploading(false)
+                return
+            }
+
+            console.log('🔍 File uploaded successfully to storage')
+
+            // 2. Get the public URL
+            const { data } = supabase.storage.from('job-photos').getPublicUrl(filePath)
+            const publicUrl = data?.publicUrl
+            if (!publicUrl) {
+                console.error('🔍 Failed to get public URL')
+                alert('Failed to get public URL')
+                setUploading(false)
+                return
+            }
+
+            console.log('🔍 Public URL:', publicUrl)
+
+            // 3. Call API to update the jobs table
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
+
+            if (!token) {
+                console.error('🔍 No session token available')
+                alert('No session token available. Please refresh the page and try again.')
+                setUploading(false)
+                return
+            }
+
+            console.log('🔍 Updating job with photo URL')
+
+            const res = await fetch('/api/updateJob', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    jobId: job.id,
+                    updates: { photo_urls: [...(job.photo_urls || []), publicUrl] }
+                }),
+            })
+
+            console.log('🔍 Update job response status:', res.status)
+
+            if (res.ok) {
+                const responseData = await res.json()
+                console.log('🔍 Job updated successfully:', responseData)
+                setJob(prev => ({ ...prev, photo_urls: [...(prev.photo_urls || []), publicUrl] }))
+            } else {
+                const errorData = await res.json().catch(() => ({}))
+                console.error('🔍 Failed to update job with photo URL:', errorData)
+                alert('Failed to update job with photo URL: ' + (errorData.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('🔍 Unexpected error in file upload:', error)
+            alert('Unexpected error during upload. Please try again.')
+        } finally {
             setUploading(false)
-            return
         }
-
-        // 2. Get the public URL
-        const { data } = supabase.storage.from('job-photos').getPublicUrl(filePath)
-        const publicUrl = data?.publicUrl
-        if (!publicUrl) {
-            alert('Failed to get public URL')
-            setUploading(false)
-            return
-        }
-
-        // 3. Call API to update the jobs table
-        const { data: { session } } = await supabase.auth.getSession()
-        const token = session?.access_token
-
-        const res = await fetch('/api/updateJob', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                jobId: job.id,
-                updates: { photo_urls: [...(job.photo_urls || []), publicUrl] }
-            }),
-        })
-
-        if (res.ok) {
-            setJob(prev => ({ ...prev, photo_urls: [...(prev.photo_urls || []), publicUrl] }))
-        } else {
-            const errorData = await res.json().catch(() => ({}))
-            console.error('Failed to update job with photo URL:', errorData)
-            alert('Failed to update job with photo URL')
-        }
-        setUploading(false)
     }
 
     const handleDeletePhoto = async (url: string) => {
@@ -125,27 +153,47 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
     }
 
     const handleStartJob = async () => {
-        // Get the current session token
-        const { data: { session } } = await supabase.auth.getSession()
-        const token = session?.access_token
+        console.log('🔍 Starting job:', job.id)
+        
+        try {
+            // Get the current session token
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
 
-        const res = await fetch('/api/updateJob', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                jobId: job.id,
-                updates: { status: 'active' },
-            }),
-        })
-        if (res.ok) {
-            setJob(prev => ({ ...prev, status: 'active' }))
-        } else {
-            const errorData = await res.json().catch(() => ({}))
-            console.error('Failed to start job:', errorData)
-            alert('Failed to start job.')
+            if (!token) {
+                console.error('🔍 No session token available')
+                alert('No session token available. Please refresh the page and try again.')
+                return
+            }
+
+            console.log('🔍 Sending start job request')
+
+            const res = await fetch('/api/updateJob', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    jobId: job.id,
+                    updates: { status: 'active' },
+                }),
+            })
+
+            console.log('🔍 Start job response status:', res.status)
+
+            if (res.ok) {
+                const responseData = await res.json()
+                console.log('🔍 Job started successfully:', responseData)
+                setJob(prev => ({ ...prev, status: 'active' }))
+            } else {
+                const errorData = await res.json().catch(() => ({}))
+                console.error('🔍 Failed to start job:', errorData)
+                alert('Failed to start job: ' + (errorData.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('🔍 Unexpected error starting job:', error)
+            alert('Unexpected error starting job. Please try again.')
         }
     }
 

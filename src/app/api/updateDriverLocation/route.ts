@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: Request) {
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Get the authorization header
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Missing or invalid authorization header')
+      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
+    }
+
+    // Extract the token
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Verify the user with the token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
     if (authError || !user) {
       console.error('Authentication error:', authError)
@@ -36,7 +47,20 @@ export async function POST(req: Request) {
 
     console.log('Updating driver location for job:', jobId, 'lat:', latitude, 'lng:', longitude)
 
-    const { error } = await supabase.from('driver_locations').upsert([
+    // Create a new Supabase client with the user's token for RLS
+    const supabaseWithAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    )
+
+    const { error } = await supabaseWithAuth.from('driver_locations').upsert([
       {
         job_id: jobId,
         latitude,
