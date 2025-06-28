@@ -66,24 +66,38 @@ export default function HomePage() {
       </section>
 
       {/* FEATURES */}
-      <section className="snap-start font-sans h-screen flex flex-col justify-center px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-white">
-            Why Ganbatte?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 text-left">
-            <Feature
-              title="Request Deliveries in Chat"
-              icon={MessageCircle}
-              desc="Simply ask, and we deliver. Immediate responses, and seamless coordination." />
-            <Feature
-              title="Track Orders in Real Time"
-              icon={ClockAlert}
-              desc="Track your orders with live routing to make sure deliveries are en route and on-time." />
-            <Feature
-              title="Smarter Delivery"
-              icon={PackageCheck}
-              desc="Dispatch and routes streamlined by AI. Mission-critical deliveries with pro drivers behind the wheel." />
+      <section className="snap-start font-sans h-screen flex flex-col justify-center px-6 py-8">
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden">
+          <div 
+            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            style={{
+              background: `
+                linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
+                url('/noise.png')
+              `,
+              backgroundBlendMode: 'overlay',
+              backgroundSize: '100% 100%, 200px 200px'
+            }}
+          >
+            <div className="max-w-5xl mx-auto relative z-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-white drop-shadow-2xl">
+                Why Ganbatte?
+              </h2>
+              <div className="grid md:grid-cols-3 gap-8 text-left">
+                <Feature
+                  title="Request Deliveries in Chat"
+                  icon={MessageCircle}
+                  desc="Simply ask, and we deliver. Immediate responses, and seamless coordination." />
+                <Feature
+                  title="Track Orders in Real Time"
+                  icon={ClockAlert}
+                  desc="Track your orders with live routing to make sure deliveries are en route and on-time." />
+                <Feature
+                  title="Smarter Delivery"
+                  icon={PackageCheck}
+                  desc="Dispatch and routes streamlined by AI. Mission-critical deliveries with pro drivers behind the wheel." />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -110,11 +124,11 @@ function Feature({ title, desc, icon: Icon, }: {
   title: string; desc: string; icon: React.ElementType
 }) {
   return (
-    <div className="rounded-lg border border-gray-600 bg-gradient-to-br from-[#2a2d30] to-[#1c1e21] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] p-6 hover:shadow-[0_0_10px_rgba(255,255,255,0.1)] transition">
-      <Icon className="w-8 h-8 text-lime-400 mb-4" />
+    <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-6 rounded-lg hover:bg-white/15 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+      <Icon className="w-8 h-8 text-white mb-4 drop-shadow-lg" />
 
-      <h3 className="text-2xl font-sans font-bold mb-3 text-slate-100">{title}</h3>
-      <p className="text-lg text-slate-300">{desc}</p>
+      <h3 className="text-2xl font-sans font-bold mb-3 text-white drop-shadow-lg">{title}</h3>
+      <p className="text-lg text-gray-100 drop-shadow-lg">{desc}</p>
     </div>
   )
 }
