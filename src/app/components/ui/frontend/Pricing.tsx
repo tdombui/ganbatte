@@ -13,9 +13,8 @@ export default function Pricing() {
                     backgroundSize: '100% 100%, 200px 200px'
                 }}
             >
-                <div className="max-w-4xl mx-auto text-center relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white drop-shadow-2xl">Simple, Transparent Pricing</h2>
-                    <p className="text-gray-100 mb-10 drop-shadow-lg">Built for mission-critical, speciality jobs. No hidden fees, no surprises.</p>
+                <div className="max-w-4xl mx-auto text-center relative z-10 font-sans">
+
 
                     <div className="grid md:grid-cols-3 gap-6">
                         <PriceCard
@@ -59,7 +58,7 @@ export default function Pricing() {
 
 function PriceCard({ title, price, description }: { title: string, price: string, description: string }) {
     return (
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-white/15 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+        <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
             <h3 className="text-xl font-semibold mb-2 text-white drop-shadow-lg">{title}</h3>
             <p className="text-3xl font-bold text-white drop-shadow-2xl">{price}</p>
             <p className="text-sm text-gray-200 mt-2 drop-shadow-lg">{description}</p>

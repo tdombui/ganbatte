@@ -13,8 +13,8 @@ export default function About() {
                     backgroundSize: '100% 100%, 200px 200px'
                 }}
             >
-                <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-2xl">What is Ganbatte?</h2>
+                <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10 font-sans">
+
                     <p className="text-gray-100 text-lg drop-shadow-lg">
                         Ganbatte is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
                     </p>
