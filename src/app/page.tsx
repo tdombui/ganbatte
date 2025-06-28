@@ -63,6 +63,7 @@ export default function HomePage() {
 
       {/* FEATURES */}
       <section className="snap-start font-sans h-screen flex flex-col justify-center px-6 py-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Why Ganbatte?</h2>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
@@ -76,9 +77,6 @@ export default function HomePage() {
             }}
           >
             <div className="max-w-5xl mx-auto relative z-10 font-sans">
-              <h2 className="text-5xl md:text-5xl font-bold text-center mb-12 text-white drop-shadow-lg">
-                Why Ganbatte?
-              </h2>
               <div className="grid md:grid-cols-3 gap-8 text-left">
                 <Feature
                   title="Request Deliveries in Chat"
