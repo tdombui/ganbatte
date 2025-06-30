@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/client'
 import { ParsedJob } from '@/types/job'
 
 export default function TestListJobs() {
@@ -15,6 +15,7 @@ export default function TestListJobs() {
                 console.log('🔍 Fetching jobs...')
                 
                 // Get auth headers
+                const supabase = createClient()
                 const { data: { session } } = await supabase.auth.getSession()
                 const headers: HeadersInit = {
                     'Content-Type': 'application/json',

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import StaffJobView from './StaffJobView'
-import { supabase } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/client'
 import { ParsedJob, JobLeg } from '@/types/job'
 import { redirect } from 'next/navigation'
 
@@ -29,7 +29,7 @@ export default function StaffJobPage() {
                 console.log('🔍 StaffJobPage: Starting auth and job fetch...')
                 
                 // Get current user
-                const { data: { user }, error: authError } = await supabase.auth.getUser()
+                const { data: { user }, error: authError } = await createClient().auth.getUser()
                 
                 if (authError || !user) {
                     console.log('🔍 StaffJobPage: No authenticated user')
@@ -40,7 +40,7 @@ export default function StaffJobPage() {
                 console.log('🔍 StaffJobPage: User authenticated:', user.id)
 
                 // Check if user is staff/admin
-                const { data: profile, error: profileError } = await supabase
+                const { data: profile, error: profileError } = await createClient()
                     .from('profiles')
                     .select('role')
                     .eq('id', user.id)
@@ -65,7 +65,7 @@ export default function StaffJobPage() {
                 // Fetch job data
                 console.log('🔍 StaffJobPage: Fetching job with ID:', slug)
                 
-                const { data: jobData, error: jobError } = await supabase
+                const { data: jobData, error: jobError } = await createClient()
                     .from('jobs')
                     .select('*')
                     .eq('id', slug)

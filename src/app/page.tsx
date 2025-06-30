@@ -3,27 +3,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MessageCircle, ClockAlert, PackageCheck } from 'lucide-react'
+import React from 'react'
+import { useAuthContext } from './providers'
+import UnifiedNavbar from './components/nav/UnifiedNavbar'
 
 export default function HomePage() {
+  const { user, loading, isAuthenticated, isCustomer, isStaff, isAdmin } = useAuthContext()
+
   return (
-    <main className="snap-y snap-mandatory h-screen overflow-y-scroll scroll-smooth bg-black text-white">
+    <main className="h-screen overflow-y-scroll scroll-smooth bg-black text-white">
+      {/* Use the UnifiedNavbar component */}
+      <UnifiedNavbar />
+
       {/* HERO */}
-      <section className="snap-start min-h-screen flex flex-col items-center px-6 text-center space-y-0 relative pt-16 pb-48">
-        {/* Ganbatte title and logo in top left like nav */}
-        <div className="absolute top-8 left-8 z-20 flex items-center gap-3">
-          <Image
-            src="/ganbatte.png"
-            alt="Ganbatte Logo"
-            width={60}
-            height={24}
-            className="drop-shadow-2xl"
-            priority
-          />
-          <h1 className="text-3xl md:text-4xl font-bold font-sans tracking-tight">
-            Ganbatte
-          </h1>
-        </div>
-        
+      <section className="min-h-screen flex flex-col items-center px-6 text-center space-y-0 relative pt-24 pb-48">
         {/* Outer wrapper container */}
         <div 
           className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden mt-20 mb-16 flex-1 flex flex-col justify-center"
@@ -44,27 +37,53 @@ export default function HomePage() {
             <br />
             Move payloads by text. AI handles the rest.
           </p>
+          
+          {/* Welcome message for authenticated users */}
+          {!loading && isAuthenticated && (
+            <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+              <p className="text-white font-medium">
+                Welcome back, {user?.full_name}! 
+                {isCustomer && ' Ready to move a payload?'}
+                {isStaff && ' Ready to manage jobs?'}
+                {isAdmin && ' Ready to manage the system?'}
+              </p>
+            </div>
+          )}
+          
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-            <Link
-              href="/chat"
-              className="inline-block bg-lime-500 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-lime-400/50"
-            >
-              Request a Delivery →
-            </Link>
-            <button
-              disabled
-              className="inline-block bg-blue-950/50 text-gray-400 font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-gray-600/30 cursor-not-allowed opacity-60"
-            >
-              Get Started
-            </button>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href={isCustomer ? "/chat" : (isStaff || isAdmin ? "/staff/jobs" : "/jobs")}
+                  className="inline-block bg-lime-400 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,.7)] hover:shadow-lime-400/50"
+                >
+                  {isCustomer ? 'Request a Delivery →' : 'View Jobs →'}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/chat"
+                  className="inline-block bg-lime-400 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,.7)] hover:shadow-lime-400/50"
+                >
+                  Request a Delivery →
+                </Link>
+                <Link
+                  href="/auth"
+                  className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-white/20 hover:border-white/40"
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
 
       {/* FEATURES */}
-      <section className="snap-start font-sans h-screen flex flex-col justify-center px-6 py-8">
+      <section id="features" className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Why Ganbatte?</h2>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
             style={{
@@ -76,8 +95,8 @@ export default function HomePage() {
               backgroundSize: '100% 100%, 200px 200px'
             }}
           >
-            <div className="max-w-5xl mx-auto relative z-10 font-sans">
-              <div className="grid md:grid-cols-3 gap-8 text-left">
+            <div className="max-w-6xl mx-auto relative z-10 font-sans">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-left">
                 <Feature
                   title="Request Deliveries in Chat"
                   icon={MessageCircle}
@@ -97,9 +116,9 @@ export default function HomePage() {
       </section>
 
       {/* ABOUT */}
-      <section className="snap-start min-h-screen flex flex-col items-center justify-center px-6 py-8">
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans relative">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">What is Ganbatte?</h2>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
             style={{
@@ -111,12 +130,12 @@ export default function HomePage() {
               backgroundSize: '100% 100%, 200px 200px'
             }}
           >
-            <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10 font-sans">
+            <div className="max-w-6xl mx-auto text-center space-y-6 relative z-10 font-sans">
               <p className="text-gray-100 text-lg drop-shadow-lg">
                 Ganbatte is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
               </p>
               <p className="text-gray-100 text-lg drop-shadow-lg">
-                We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers behind the wheel.
+                We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers and handlers behind the wheel.
               </p>
               <p className="text-gray-100 text-lg drop-shadow-lg">
                 Keep your parts moving and projects on track.
@@ -125,13 +144,23 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        {/* No1 image positioned at bottom right of the section */}
+        <div className="absolute md:bottom-[-12] md:right-[-12] bottom-[-8] right-[-8] z-20">
+          <Image
+            src="/no1.webp"
+            alt="No1"
+            width={144}
+            height={144}
+            className="w-auto h-49 drop-shadow-2xl"
+          />
+        </div>
       </section>
 
       {/* PRICING */}
-      <section className="snap-start min-h-screen flex flex-col items-center justify-center px-6 py-8">
+      <section id="pricing" className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans ">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Simple, Transparent Pricing</h2>
         <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">Built for mission-critical, speciality jobs. No hidden fees, no surprises.</p>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
             style={{
@@ -143,7 +172,7 @@ export default function HomePage() {
               backgroundSize: '100% 100%, 200px 200px'
             }}
           >
-            <div className="max-w-4xl mx-auto text-center relative z-10 font-sans">
+            <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
               <div className="grid md:grid-cols-3 gap-6">
                 <PriceCard
                   title="Base Rate"
@@ -157,35 +186,160 @@ export default function HomePage() {
                 />
                 <PriceCard
                   title="Per Item"
-                  price="$1 per extra lb"
+                  price="$0.50 per extra lb"
                   description="First 50lbs are free"
                 />
 
                 <PriceCard
-                  title="Same Day Delivery"
-                  price="$60"
+                  title="Priority Delivery"
+                  price="$100"
                   description="Priority routing for urgent jobs"
                 />
                 <PriceCard
-                  title="After Hours / Weekend"
-                  price="$60"
-                  description="Deliveries after standard hours"
+                  title="Nights & Weekends"
+                  price="$25"
+                  description="For Delivery after standard hours"
                 />
                 <PriceCard
                   title="Discounts"
-                  price="–25%"
+                  price="Up to 25% off"
                   description="For jobs scheduled 24h+ in advance"
                 />
               </div>
-              <p className="text-sm text-gray-200 mt-6 drop-shadow-lg">Need bulk or recurring delivery support? <a href="mailto:team@ganbatte.run" className="underline">Contact us</a>.</p>
+              <p className="text-sm text-gray-200 mt-8 drop-shadow-lg">Need equipment staging or recurring logistics support? <a href="mailto:team@ganbatte.run" className="underline">Contact us</a>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ENTERPRISE */}
+      <section id="enterprise" className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Enterprise Logistics</h2>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">Scale your operations with dedicated logistics infrastructure and priority support.</p>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
+          <div 
+            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            style={{
+              background: `
+                linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
+                url('/noise.png')
+              `,
+              backgroundBlendMode: 'overlay',
+              backgroundSize: '100% 100%, 200px 200px'
+            }}
+          >
+            <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg">Dedicated Fleet</h3>
+                  <p className="text-gray-200 drop-shadow-lg">Reserved vehicles and drivers for your exclusive use, ensuring consistent availability and reliability.</p>
+                </div>
+                <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg">Priority Service</h3>
+                  <p className="text-gray-200 drop-shadow-lg">24/7 dedicated account management and priority routing for mission-critical deliveries.</p>
+                </div>
+                <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg">Access to Product Sourcing</h3>
+                  <p className="text-gray-200 drop-shadow-lg">Take advantage of a robust network of suppliers and manufacturers.</p>
+                </div>
+                <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg">Volume Discounts</h3>
+                  <p className="text-gray-200 drop-shadow-lg">Competitive pricing for high-volume operations with guaranteed service levels.</p>
+                </div>
+              </div>
+              <div className="mt-8">
+                <a href="mailto:team@ganbatte.run" className="inline-block bg-lime-400 hover:bg-lime-300 text-black font-semibold px-8 py-4 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]">
+                  Get in Touch  →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* MAKE PAYLOAD MOVES */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos, we move the parts that keep your projects moving.</p>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <PayloadCard
+                src="/payloads/brake.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/wheel.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/tire.webp"
+                gradientType="top"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/coilover.webp"
+                gradientType="bottom"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/turbo.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
+              <PayloadCard
+                src="/payloads/bumper.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <section className="snap-start min-h-screen flex flex-col justify-center items-center px-6 py-8 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} Ganbatte Payload Movers 🏁
+      <section className=" flex flex-col justify-center items-center px-6 py-8 text-center">
+        <div className="w-full max-w-6xl mx-auto">
+          {/* Social Links with Turbo Home Image */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="flex justify-center items-center">
+              <Image
+                src="/turbo_home.webp"
+                alt="Turbo Home"
+                width={300}
+                height={200}
+                className="w-auto h-32 drop-shadow-2xl"
+              />
+            </div>
+            <div className="space-y-4 font-sans">
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">Support</h3>
+              <div className="space-y-2">
+                <a href="mailto:team@ganbatte.run" className="block text-gray-300 hover:text-white transition-colors">Contact Us</a>
+                <a href="#" className="block text-gray-300 hover:text-white transition-colors">Help Center</a>
+                <a href="#" className="block text-gray-300 hover:text-white transition-colors">FAQ</a>
+              </div>
+            </div>
+          
+            
+            <div className="space-y-4 font-sans">
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">Company</h3>
+              <div className="space-y-2">
+                <a href="#" className="block text-gray-300 hover:text-white transition-colors">About</a>
+                <a href="#" className="block text-gray-300 hover:text-white transition-colors">Instagram</a>
+                <a href="#" className="block text-gray-300 hover:text-white transition-colors">Privacy Policy</a>
+              </div>
+            </div>
+          </div>
+          
+          {/* Copyright */}
+          <div className=" border-gray-700 pt-8">
+            <p className="text-sm text-gray-500 font-sans">
+              &copy; {new Date().getFullYear()} — Ganbatte, All Rights Reserved
+            </p>
+          </div>
+        </div>
       </section>
     </main>
   )
@@ -210,6 +364,62 @@ function PriceCard({ title, price, description }: { title: string, price: string
       <h3 className="text-xl font-semibold mb-2 text-white drop-shadow-lg">{title}</h3>
       <p className="text-3xl font-bold text-white drop-shadow-2xl">{price}</p>
       <p className="text-sm text-gray-200 mt-2 drop-shadow-lg">{description}</p>
+    </div>
+  )
+}
+
+function PayloadCard({ src, gradientType, mobileGradientType }: { src: string, gradientType: string, mobileGradientType: string }) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  const getGradient = () => {
+    const currentGradientType = isMobile ? mobileGradientType : gradientType;
+    
+    switch (currentGradientType) {
+      case 'top':
+        return 'linear-gradient(to bottom, #ffed00, #e10600)';
+      case 'middle':
+        return 'linear-gradient(to bottom, #e62d00, #e10600 30%, #e10600 70%, #ad0f18)';
+      case 'bottom':
+        return 'linear-gradient(to bottom, #e10600, #002f6c)';
+      default:
+        return 'linear-gradient(to bottom, #ffed00, #e10600)';
+    }
+  };
+
+  return (
+    <div 
+      className="relative p-4 rounded-lg hover:scale-105 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] overflow-hidden aspect-square"
+      style={{
+        backgroundImage: `
+          ${getGradient()},
+          url('/noise.png')
+        `,
+        backgroundBlendMode: 'overlay',
+        backgroundSize: '100% 100%, 200px 200px'
+      }}
+    >
+      <div className="relative z-10 h-full flex flex-col justify-center">
+        <div className="flex justify-center items-center p-2">
+          <Image
+            src={src}
+            alt="Payload"
+            width={180}
+            height={180}
+            className="w-auto h-40 object-contain brightness-0 invert"
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 'use client'
-import Navbar from '../components/nav/Navbar'
+import SmartNavbar from '../components/nav/SmartNavbar'
 import SingleLegJobView from '@/app/job/views/SingleLegJobView'
 import MultiLegJobView from '@/app/job/views/MultiLegJobView'
 import { ParsedJob } from '@/types/job'
@@ -30,7 +30,7 @@ export default function JobClientView({ job }: { job: JobType }) {
     if (isMultiLegJob(job)) {
         return (
             <>
-                <Navbar />
+                <SmartNavbar />
                 <div className="mt-16 max-w-xl mx-auto py-12">
                     <MultiLegJobView job={job} />
                 </div>
@@ -39,7 +39,7 @@ export default function JobClientView({ job }: { job: JobType }) {
     } else {
         return (
             <>
-                <Navbar />
+                <SmartNavbar />
                 <div className="mt-16 max-w-xl mx-auto py-12">
                     <SingleLegJobView job={job} />
                 </div>

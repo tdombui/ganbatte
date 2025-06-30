@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from 'next/script'
 import "./globals.css";
+import { AuthProvider } from './providers'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -33,7 +33,9 @@ export default function RootLayout({
           src={`https://maps.googleapis.com/maps/api/js?key=AIzaSyDyppTQmiJKw-k8Y6A1nApOuIY332vuGK4&libraries=geometry`}
           strategy="beforeInteractive"
         />
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

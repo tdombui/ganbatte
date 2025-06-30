@@ -94,20 +94,31 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
     useEffect(() => {
         async function fetchLocation() {
             try {
+                console.log(`📍 Fetching driver location for job ${job.id}...`)
                 const res = await fetch(`/api/getDriverLocation?jobId=${job.id}`)
-                if (!res.ok) return
+                if (!res.ok) {
+                    console.log(`❌ Failed to fetch driver location: ${res.status}`)
+                    return
+                }
                 const data = await res.json()
                 if (data && data.latitude && data.longitude) {
+                    console.log(`✅ Driver location updated: ${data.latitude}, ${data.longitude}`)
                     setDriverLocation({ lat: data.latitude, lng: data.longitude })
+                } else {
+                    console.log(`⏳ No driver location available yet (null coordinates)`)
                 }
-            } catch {
-                // Ignore fetch errors
+            } catch (error) {
+                console.log(`❌ Error fetching driver location:`, error)
             }
         }
         if (job.status === 'active' || job.status === 'currently driving') {
+            console.log(`🚗 Starting driver location tracking for job ${job.id} (every 10 seconds)`)
             fetchLocation()
             const interval = setInterval(fetchLocation, 10000)
-            return () => clearInterval(interval)
+            return () => {
+                console.log(`🛑 Stopping driver location tracking for job ${job.id}`)
+                clearInterval(interval)
+            }
         }
     }, [job.id, job.status])
 

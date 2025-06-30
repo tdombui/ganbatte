@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '../../../../lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
     // Test jobs table access
-    const { data: jobs, error } = await supabase
+    const { data: jobs, error } = await supabaseAdmin
       .from('jobs')
       .select('*')
       .limit(5)

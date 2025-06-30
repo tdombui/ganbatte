@@ -1,8 +1,28 @@
 // /api/createJob/route.ts
 
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { ParsedJob } from '@/types/job'
+
+async function geocodeAddress(address: string) {
+    if (!address) return { lat: null, lng: null }
+    
+    try {
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        )
+        const data = await res.json()
+        
+        if (data.results && data.results.length > 0) {
+            const location = data.results[0].geometry.location
+            return { lat: location.lat, lng: location.lng }
+        }
+    } catch (error) {
+        console.error('🔥 Geocoding error for address:', address, error)
+    }
+    
+    return { lat: null, lng: null }
+}
 
 async function fetchRouteInfo(pickup: string, dropoff: string) {
     if (!pickup || !dropoff) return { distance_meters: null, duration_seconds: null }
@@ -40,6 +60,14 @@ export async function POST(req: Request) {
 
         console.log('🔍 User authenticated:', user.id)
 
+        // Geocode addresses to get coordinates
+        console.log('🔍 Geocoding addresses...')
+        const pickupCoords = await geocodeAddress(job.pickup)
+        const dropoffCoords = await geocodeAddress(job.dropoff)
+        
+        console.log('🔍 Pickup coordinates:', pickupCoords)
+        console.log('🔍 Dropoff coordinates:', dropoffCoords)
+
         // Fetch route info
         const { distance_meters, duration_seconds } = await fetchRouteInfo(job.pickup, job.dropoff)
 
@@ -55,6 +83,10 @@ export async function POST(req: Request) {
             parts: job.parts || [],
             pickup: job.pickup,
             dropoff: job.dropoff,
+            pickup_lat: pickupCoords.lat,
+            pickup_lng: pickupCoords.lng,
+            dropoff_lat: dropoffCoords.lat,
+            dropoff_lng: dropoffCoords.lng,
             deadline: job.deadline,
             deadline_display: job.deadlineDisplay,
             distance_meters,

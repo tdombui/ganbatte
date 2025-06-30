@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/client'
 
 export async function GET(request: Request) {
   try {
+    console.log('🔍 Testing auth...')
+    
+    const supabase = createClient()
+    
     // Get the authorization header
     const authHeader = request.headers.get('authorization')
     console.log('🔍 Auth header:', authHeader ? 'Present' : 'Missing')
@@ -17,7 +21,7 @@ export async function GET(request: Request) {
     console.log('🔍 User:', user ? `User ${user.id}` : 'No user')
     console.log('🔍 User error:', userError)
 
-    // Check if we can access the profiles table
+    // Try to get profile data
     let profileData = null
     let profileError = null
     if (user) {

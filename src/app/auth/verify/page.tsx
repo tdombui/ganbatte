@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/auth'
+import { createClient } from '../../../lib/supabase/client'
 
 export default function VerifyPage() {
   const router = useRouter()
@@ -23,7 +23,7 @@ export default function VerifyPage() {
     setMessage('')
     
     try {
-      const { error } = await supabase.auth.resend({
+      const { error } = await createClient().auth.resend({
         type: 'signup',
         email: email.trim(),
       })

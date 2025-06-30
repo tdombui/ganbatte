@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../lib/auth'
+import { createClient } from '../../../lib/supabase/client'
 
 export default function TestClientPage() {
   const [status, setStatus] = useState('Loading...')
@@ -13,7 +13,7 @@ export default function TestClientPage() {
         setStatus('Testing Supabase connection...')
         
         // Test basic connection
-        const { error } = await supabase
+        const { error } = await createClient()
           .from('profiles')
           .select('count')
           .limit(1)

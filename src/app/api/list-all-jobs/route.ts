@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         }
 
         const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
         
         if (authError || !user) {
             console.log('❌ Auth error:', authError)
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         console.log('🔍 User authenticated:', user.id)
 
         // Get all jobs for this user
-        const { data: jobs, error } = await supabase
+        const { data: jobs, error } = await supabaseAdmin
             .from('jobs')
             .select('*')
             .eq('user_id', user.id)

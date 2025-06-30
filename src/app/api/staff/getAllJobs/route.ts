@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const token = authHeader.replace('Bearer ', '')
     
     // Get the current user using the token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     
     if (authError || !user) {
       console.log('❌ Auth error:', authError)
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     console.log('🔍 User authenticated:', user.id)
 
     // Get user profile to check role
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     console.log('🔍 Staff getting all jobs for user:', user.id, 'Role:', profile.role)
 
     // Get all jobs (staff can see all jobs due to RLS policies)
-    const { data: jobs, error } = await supabase
+    const { data: jobs, error } = await supabaseAdmin
       .from('jobs')
       .select('*')
       .order('created_at', { ascending: false })

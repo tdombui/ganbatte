@@ -1,50 +1,64 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useStaffAuth } from '@/hooks/useStaffAuth'
-import Navbar from '@/app/components/nav/Navbar'
+import { useAuthContext } from '../../providers'
+import { createClient } from '../../../lib/supabase/client'
+import SmartNavbar from '../../components/nav/SmartNavbar'
 import { UserPlus, Edit, Trash2, Shield, User } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface StaffMember {
   id: string
   email: string
   full_name: string
-  role: 'staff' | 'admin'
+  role: string
+  created_at: string
+  phone?: string
+  company?: string
   employee_id?: string
   department?: string
-  is_active: boolean
-  hire_date?: string
-  created_at: string
+  is_active?: boolean
 }
 
 export default function AdminStaffPage() {
-  const { isAdmin, loading } = useStaffAuth()
+  const { loading, isAdmin, user } = useAuthContext()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loadingStaff, setLoadingStaff] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
+  const router = useRouter()
+
+  // Redirect if not authenticated or not admin
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      console.log('🔍 AdminStaffPage: Redirecting to auth - not authenticated or not admin')
+      router.push('/auth?redirectTo=/admin/staff')
+    }
+  }, [user, loading, isAdmin, router])
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
-      // Redirect non-admin users
-      window.location.href = '/'
-      return
-    }
-
-    if (isAdmin) {
+    if (!loading && isAdmin) {
       fetchStaff()
     }
   }, [loading, isAdmin])
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch('/api/admin/staff')
-      if (response.ok) {
-        const data = await response.json()
-        setStaff(data.staff)
+      setLoadingStaff(true)
+
+      const { data, error } = await createClient()
+        .from('staff')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching staff:', error)
+        return
       }
-    } catch (error) {
-      console.error('Error fetching staff:', error)
+
+      setStaff(data || [])
+    } catch (err) {
+      console.error('Error fetching staff:', err)
     } finally {
       setLoadingStaff(false)
     }
@@ -129,7 +143,7 @@ export default function AdminStaffPage() {
   if (loading || loadingStaff) {
     return (
       <>
-        <Navbar />
+        <SmartNavbar />
         <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
           <div className="text-white text-lg">Loading...</div>
         </div>
@@ -137,12 +151,16 @@ export default function AdminStaffPage() {
     )
   }
 
-  if (!isAdmin) {
+  // Show loading while redirecting if not authenticated
+  if (!user || !isAdmin) {
     return (
       <>
-        <Navbar />
+        <SmartNavbar />
         <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-          <div className="text-white text-lg">Access denied</div>
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-neutral-400">Redirecting to login...</p>
+          </div>
         </div>
       </>
     )
@@ -150,7 +168,7 @@ export default function AdminStaffPage() {
 
   return (
     <>
-      <Navbar />
+      <SmartNavbar />
       <div className="min-h-screen bg-neutral-950 text-white pt-16">
         <div className="max-w-6xl mx-auto p-6">
           <div className="flex justify-between items-center mb-8">
@@ -198,22 +216,25 @@ export default function AdminStaffPage() {
                       <td className="p-3">{member.employee_id || '—'}</td>
                       <td className="p-3">{member.department || '—'}</td>
                       <td className="p-3">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                          member.is_active ? 'bg-green-500' : 'bg-red-500'
-                        }`}></span>
-                        {member.is_active ? 'Active' : 'Inactive'}
+                        <span className={`inline-flex px-2 py-1 rounded text-xs ${
+                          member.is_active 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-red-600 text-white'
+                        }`}>
+                          {member.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
                           <button
                             onClick={() => setEditingStaff(member)}
-                            className="text-blue-400 hover:text-blue-300"
+                            className="p-1 hover:bg-neutral-700 rounded"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDeleteStaff(member.id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="p-1 hover:bg-red-600 rounded"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -226,9 +247,9 @@ export default function AdminStaffPage() {
             </div>
           </div>
 
-          {/* Add Staff Modal */}
+          {/* Add Staff Form */}
           {showAddForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
               <div className="bg-neutral-900 rounded-lg p-6 w-full max-w-md">
                 <h3 className="text-xl font-semibold mb-4">Add Staff Member</h3>
                 <form action={handleAddStaff} className="space-y-4">
@@ -238,7 +259,7 @@ export default function AdminStaffPage() {
                       type="email"
                       name="email"
                       required
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
@@ -247,7 +268,7 @@ export default function AdminStaffPage() {
                       type="text"
                       name="full_name"
                       required
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
@@ -255,7 +276,7 @@ export default function AdminStaffPage() {
                     <select
                       name="role"
                       required
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     >
                       <option value="staff">Staff</option>
                       <option value="admin">Admin</option>
@@ -266,7 +287,7 @@ export default function AdminStaffPage() {
                     <input
                       type="text"
                       name="employee_id"
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
@@ -274,20 +295,20 @@ export default function AdminStaffPage() {
                     <input
                       type="text"
                       name="department"
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 pt-4">
                     <button
                       type="submit"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex-1"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
                     >
                       Add Staff
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowAddForm(false)}
-                      className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded flex-1"
+                      className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded"
                     >
                       Cancel
                     </button>
@@ -297,9 +318,9 @@ export default function AdminStaffPage() {
             </div>
           )}
 
-          {/* Edit Staff Modal */}
+          {/* Edit Staff Form */}
           {editingStaff && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
               <div className="bg-neutral-900 rounded-lg p-6 w-full max-w-md">
                 <h3 className="text-xl font-semibold mb-4">Edit Staff Member</h3>
                 <form action={handleUpdateStaff} className="space-y-4">
@@ -310,7 +331,7 @@ export default function AdminStaffPage() {
                       name="full_name"
                       defaultValue={editingStaff.full_name}
                       required
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
@@ -319,7 +340,7 @@ export default function AdminStaffPage() {
                       name="role"
                       defaultValue={editingStaff.role}
                       required
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     >
                       <option value="staff">Staff</option>
                       <option value="admin">Admin</option>
@@ -331,7 +352,7 @@ export default function AdminStaffPage() {
                       type="text"
                       name="employee_id"
                       defaultValue={editingStaff.employee_id || ''}
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
@@ -340,31 +361,31 @@ export default function AdminStaffPage() {
                       type="text"
                       name="department"
                       defaultValue={editingStaff.department || ''}
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Status</label>
                     <select
                       name="is_active"
-                      defaultValue={editingStaff.is_active.toString()}
-                      className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white"
+                      defaultValue={editingStaff.is_active?.toString() || 'true'}
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
                     >
                       <option value="true">Active</option>
                       <option value="false">Inactive</option>
                     </select>
                   </div>
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 pt-4">
                     <button
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
                     >
                       Update Staff
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingStaff(null)}
-                      className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded flex-1"
+                      className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded"
                     >
                       Cancel
                     </button>

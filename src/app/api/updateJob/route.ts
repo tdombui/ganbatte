@@ -1,7 +1,7 @@
-import { supabase } from '@/lib/auth'
 import { NextResponse } from 'next/server'
-import { JobLeg } from '@/types/job'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@supabase/supabase-js'
+import { JobLeg } from '@/types/job'
 
 const geocodeAddress = async (address: string) => {
     if (!address) return null;
@@ -40,15 +40,30 @@ export async function POST(req: Request) {
         const token = authHeader.replace('Bearer ', '')
         
         // Verify the user with the token
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
         
         if (authError || !user) {
             console.error('Authentication error:', authError)
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
         }
 
-        // Check if user is staff/admin for job updates
-        const { data: profile, error: profileError } = await supabase
+        console.log('🔍 API: User authenticated for job update:', user.id)
+
+        // Create a new Supabase client with the user's token for RLS
+        const supabaseWithAuth = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            }
+        )
+
+        // Check if user is staff/admin for job updates using the authenticated client
+        const { data: profile, error: profileError } = await supabaseWithAuth
             .from('profiles')
             .select('role')
             .eq('id', user.id)
@@ -98,19 +113,7 @@ export async function POST(req: Request) {
             updates.duration_seconds = duration_seconds
         }
 
-        // Create a new Supabase client with the user's token for RLS
-        const supabaseWithAuth = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            }
-        )
-
+        // Use the authenticated client for the update operation
         const { data, error } = await supabaseWithAuth
             .from('jobs')
             .update(updates)

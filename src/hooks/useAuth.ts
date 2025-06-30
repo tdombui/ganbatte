@@ -1,3 +1,7 @@
+// DEPRECATED: This hook is no longer used. Use useAuthContext from ../app/providers instead.
+// This file is kept for reference but should not be imported.
+
+/*
 import { useState, useEffect } from 'react'
 import { UserWithProfile } from '../../supabase/types'
 import { getCurrentUser, signIn, signUp, signOut, supabase } from '../lib/auth'
@@ -12,6 +16,13 @@ export function useAuth() {
     
     // Get initial session with retry logic
     checkUserWithRetry()
+
+    // Set a timeout to prevent infinite loading (industry-standard practice)
+    const timeoutId = setTimeout(() => {
+      console.log('🔍 useAuth: Auth check timeout reached, clearing loading state')
+      setLoading(false)
+      // Don't clear session on timeout - just stop loading
+    }, 8000) // 8 second timeout (reasonable for auth checks)
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -48,6 +59,7 @@ export function useAuth() {
     }, 10 * 60 * 1000) // Refresh every 10 minutes
 
     return () => {
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
       clearInterval(refreshInterval)
     }
@@ -73,6 +85,21 @@ export function useAuth() {
         return
       }
 
+      // Check if session is expired (industry-standard check)
+      if (session.expires_at) {
+        const expiresAt = new Date(session.expires_at * 1000)
+        const now = new Date()
+        const isExpired = expiresAt <= now
+        
+        if (isExpired) {
+          console.log('🔍 useAuth: Session expired, clearing session')
+          await supabase.auth.signOut()
+          setUser(null)
+          setLoading(false)
+          return
+        }
+      }
+
       const currentUser = await getCurrentUser()
       console.log('🔍 useAuth: checkUserWithRetry result:', currentUser?.id)
       
@@ -94,6 +121,19 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('🔍 useAuth: Error checking user:', error)
+      
+      // Handle specific auth errors gracefully
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase()
+        if (errorMessage.includes('invalid') || errorMessage.includes('expired') || errorMessage.includes('token')) {
+          console.log('🔍 useAuth: Auth token error detected, clearing session')
+          await supabase.auth.signOut()
+          setUser(null)
+          setLoading(false)
+          return
+        }
+      }
+      
       setUser(null)
     } finally {
       console.log('🔍 useAuth: Setting loading to false')
@@ -106,12 +146,31 @@ export function useAuth() {
       const { error } = await signIn(email, password)
       if (error) throw error
       
-      // Force a session check after login
-      setTimeout(() => {
-        checkUserWithRetry()
-      }, 500)
-      
-      return { error: null }
+      // Wait for the auth state to be updated
+      return new Promise((resolve) => {
+        const checkAuthState = async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user) {
+              const currentUser = await getCurrentUser()
+              if (currentUser) {
+                console.log('🔍 useAuth: Login successful, user authenticated:', currentUser.id)
+                resolve({ error: null })
+                return
+              }
+            }
+            
+            // If not ready yet, try again in 100ms
+            setTimeout(checkAuthState, 100)
+          } catch (error) {
+            console.error('🔍 useAuth: Error checking auth state after login:', error)
+            resolve({ error: error as Error })
+          }
+        }
+        
+        // Start checking after a short delay
+        setTimeout(checkAuthState, 200)
+      })
     } catch (error) {
       return { error: error as Error }
     }
@@ -129,11 +188,24 @@ export function useAuth() {
 
   async function logout() {
     try {
-      const { error } = await signOut()
-      if (error) throw error
+      console.log('🔍 useAuth: Starting logout...')
+      
+      // Clear user state immediately
       setUser(null)
+      
+      // Sign out from Supabase
+      const { error } = await signOut()
+      if (error) {
+        console.error('🔍 useAuth: SignOut error:', error)
+        throw error
+      }
+      
+      console.log('🔍 useAuth: Logout successful')
       return { error: null }
     } catch (error) {
+      console.error('🔍 useAuth: Logout error:', error)
+      // Even if there's an error, clear the user state
+      setUser(null)
       return { error: error as Error }
     }
   }
@@ -148,5 +220,31 @@ export function useAuth() {
     isCustomer: user?.role === 'customer',
     isStaff: user?.role === 'staff',
     isAdmin: user?.role === 'admin',
+  }
+}
+*/
+
+// Re-export useAuthContext to prevent multiple Supabase client instances
+// This ensures all components use the same authentication context and Supabase client
+export { useAuthContext as useAuth } from '../app/providers'
+
+// This file is deprecated - use useAuthContext from ../app/providers instead
+// This wrapper maintains backward compatibility while preventing multiple Supabase client instances
+
+import { useAuthContext } from '../app/providers'
+
+export function useAuth() {
+  const context = useAuthContext()
+  
+  return {
+    user: context.user,
+    loading: context.loading,
+    isAuthenticated: context.isAuthenticated,
+    isCustomer: context.isCustomer,
+    isStaff: context.isStaff,
+    isAdmin: context.isAdmin,
+    login: context.login,
+    register: context.register,
+    logout: context.logout,
   }
 } 

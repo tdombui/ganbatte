@@ -1,182 +1,305 @@
 'use client'
+
 import { useEffect, useState } from 'react'
+import { createClient } from '../../../lib/supabase/client'
+import { useAuthContext } from '../../providers'
+import SmartNavbar from '../../components/nav/SmartNavbar'
 import Link from 'next/link'
-import { format } from 'date-fns'
-import Navbar from '@/app/components/nav/Navbar'
-import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
-type Leg = {
-  pickup?: string
-  dropoff?: string
-  deadline?: string
-}
-
-type Job = {
+interface Job {
   id: string
-  status: string
-  parts?: string[]
+  title?: string
+  description?: string
+  status?: string | null
+  created_at: string
   pickup?: string
   dropoff?: string
   deadline?: string
-  distance_meters?: number
-  legs?: Leg[]
-  duration_seconds?: number
-}
-
-function getDeadlineColor(deadline?: string) {
-  if (!deadline) return 'border-neutral-700'
-  const now = new Date()
-  const due = new Date(deadline)
-  const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60)
-  if (diffHours <= 4) return 'border-red-500'
-  if (diffHours <= 8) return 'border-[goldenrod]'
-  if (diffHours <= 24) return 'border-green-500'
-  return 'border-neutral-700'
-}
-
-function formatDeadline(deadline?: string) {
-  if (!deadline) return '—'
-  try {
-    return format(new Date(deadline), "EEEE, MMM d, h:mm a")
-  } catch {
-    return deadline
+  user_id: string
+  payment_status?: string
+  parts?: string[]
+  legs?: Array<{
+    part: string
+    pickup: string
+    dropoff: string
+  }>
+  user?: {
+    email: string
+    full_name: string
   }
 }
 
-function getJobPickup(job: Job) {
-  if (job.legs && job.legs.length > 0) return job.legs[0].pickup || ''
-  return job.pickup || ''
-}
-
-function getJobDropoff(job: Job) {
-  if (job.legs && job.legs.length > 0) return job.legs[job.legs.length - 1].dropoff || ''
-  return job.dropoff || ''
-}
-
-function getJobEarliestDeadline(job: Job) {
-  let deadlines: string[] = []
-  if (job.deadline) deadlines.push(job.deadline)
-  if (job.legs && job.legs.length > 0) {
-    deadlines = deadlines.concat(job.legs.map(l => l.deadline).filter(Boolean) as string[])
-  }
-  if (deadlines.length === 0) return undefined
-  return deadlines.reduce((earliest, curr) => {
-    if (!earliest) return curr
-    return new Date(curr) < new Date(earliest) ? curr : earliest
-  }, undefined as string | undefined)
-}
-
-export default function StaffJobsList() {
-  const { user, loading } = useAuth()
+export default function StaffJobsPage() {
+  const { user, loading, isStaff, isAdmin } = useAuthContext()
   const [jobs, setJobs] = useState<Job[]>([])
-  const [loadingJobs, setLoadingJobs] = useState(true)
-  
-  // Derive staff status from user role
-  const isStaff = user?.role === 'staff' || user?.role === 'admin'
+  const [jobsLoading, setJobsLoading] = useState(true)
+  const router = useRouter()
+
+  // Redirect if not authenticated or not staff
+  useEffect(() => {
+    if (!loading && (!user || (!isStaff && !isAdmin))) {
+      console.log('🔍 StaffJobsPage: Redirecting to auth - not authenticated or not staff')
+      router.push('/auth?redirectTo=/staff/jobs')
+    }
+  }, [user, loading, isStaff, isAdmin, router])
 
   useEffect(() => {
-    if (!loading && !isStaff) {
-      // Redirect non-staff users
-      window.location.href = '/'
-      return
-    }
-
-    if (isStaff) {
+    if (user && (isStaff || isAdmin)) {
       fetchJobs()
     }
-  }, [loading, isStaff])
+  }, [user, isStaff, isAdmin])
 
   const fetchJobs = async () => {
     try {
-      console.log('🔍 Fetching jobs directly from Supabase...')
+      setJobsLoading(true)
       
-      // Get all jobs directly from Supabase (staff can see all jobs due to RLS policies)
-      const { data: jobs, error } = await supabase
+      const { data, error } = await createClient()
         .from('jobs')
-        .select('*')
+        .select(`
+          *,
+          user:profiles(email, full_name)
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('❌ Error fetching jobs:', error)
+        console.error('Error fetching jobs:', error)
         return
       }
 
-      console.log('✅ Found jobs:', jobs?.length || 0)
-      
-      setJobs((jobs || []).sort((a: Job, b: Job) => {
-        const aDeadline = getJobEarliestDeadline(a)
-        const bDeadline = getJobEarliestDeadline(b)
-        const aTime = aDeadline ? new Date(aDeadline).getTime() : Infinity
-        const bTime = bDeadline ? new Date(bDeadline).getTime() : Infinity
-        return aTime - bTime
-      }))
-      
+      setJobs(data || [])
     } catch (error) {
       console.error('Error fetching jobs:', error)
     } finally {
-      setLoadingJobs(false)
+      setJobsLoading(false)
     }
   }
 
-  if (loading || loadingJobs) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) return 'bg-gray-500'
+    
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-500'
+      case 'in_progress':
+        return 'bg-blue-500'
+      case 'active':
+      case 'currently driving':
+        return 'bg-green-500'
+      case 'completed':
+        return 'bg-green-500'
+      case 'cancelled':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
+  if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-          <div className="text-white text-lg">Loading...</div>
+      <div className="min-h-screen bg-neutral-950">
+        <SmartNavbar />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </>
+      </div>
     )
   }
 
-  if (!isStaff) {
+  // Show loading while redirecting if not authenticated
+  if (!user || (!isStaff && !isAdmin)) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-          <div className="text-white text-lg">Access denied</div>
+      <div className="min-h-screen bg-neutral-950">
+        <SmartNavbar />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-neutral-400">Redirecting to login...</p>
+          </div>
         </div>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-2xl mx-auto py-12">
-        <h1 className="text-2xl font-bold mb-6">All Jobs</h1>
-        <ul className="space-y-4">
-          {jobs.map(job => {
-            const pickup = getJobPickup(job)
-            const dropoff = getJobDropoff(job)
-            const earliestDeadline = getJobEarliestDeadline(job)
-            return (
-              <li
-                key={job.id}
-                className={`p-4 bg-neutral-800 rounded-lg flex justify-between items-center border-2 ${getDeadlineColor(earliestDeadline)}`}
-              >
-                <div>
-                  <div className="font-bold text-lg mb-1">
-                    {Array.isArray(job.parts) ? job.parts.join(', ') : job.parts || '—'}
+    <div className="min-h-screen bg-neutral-950">
+      <SmartNavbar />
+      
+      <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-white">All Jobs</h1>
+          </div>
+
+          {jobsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">No jobs found</h2>
+              <p className="text-neutral-400">No delivery jobs have been created yet.</p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {jobs.map((job) => (
+                <div key={job.id} className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      {/* Payload as title */}
+                      {job.parts && job.parts.length > 0 && (
+                        <div className="mb-2">
+                          <div className="flex flex-wrap gap-2">
+                            {job.parts.map((part, index) => (
+                              <span key={index} className="px-3 py-2 bg-neutral-800 rounded text-sm text-neutral-300">
+                                {part}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Job ID and other info */}
+                      <div className="text-sm text-neutral-400 mb-3">
+                        Job #{job.id.slice(0, 8)}
+                      </div>
+                      
+                      {job.description && (
+                        <p className="text-neutral-400 mb-3">
+                          {job.description}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Status and Payment Status in same container */}
+                    <div className="flex gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(job.status)}`}>
+                        {job.status ? job.status.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
+                      </span>
+                      {job.payment_status && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
+                          job.payment_status === 'paid' 
+                            ? 'bg-green-600' 
+                            : job.payment_status === 'pending'
+                            ? 'bg-yellow-600'
+                            : 'bg-red-600'
+                        }`}>
+                          Payment: {job.payment_status.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="mb-1">
-                    <span className="font-semibold">From:</span> {pickup || <span className="text-gray-500">(no pickup)</span>}
+                  
+                  {/* Multi-leg job display */}
+                  {job.legs && job.legs.length > 0 ? (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-neutral-300 mb-2">Route</h4>
+                      <div className="space-y-2">
+                        {job.legs.map((leg, index) => (
+                          <div key={index} className="p-3 bg-neutral-800 rounded-lg">
+                            <div className="text-xs text-neutral-400 mb-1">Trip {index + 1}</div>
+                            {leg.part && (
+                              <div className="mb-3">
+                                <h4 className="text-sm font-medium text-neutral-300 mb-1">Payload</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="px-2 py-1 bg-neutral-700 rounded text-xs text-neutral-300">
+                                    {leg.part}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div>
+                                <h4 className="text-sm font-medium text-neutral-300 mb-1">Pickup Address</h4>
+                                <p className="text-sm text-neutral-400">{leg.pickup}</p>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-neutral-300 mb-1">Dropoff Address</h4>
+                                <p className="text-sm text-neutral-400">{leg.dropoff}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Single leg job display with rounded background */
+                    <div className="mb-4">
+                      <div className="p-3 bg-neutral-800 rounded-lg">
+                        {/* Payload in rounded background for single leg */}
+                        {job.parts && job.parts.length > 0 && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-neutral-300 mb-1">Payload</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {job.parts.map((part, index) => (
+                                <span key={index} className="px-2 py-1 bg-neutral-700 rounded text-xs text-neutral-300">
+                                  {part}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Addresses */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-neutral-300 mb-1">Pickup Address</h4>
+                            <p className="text-sm text-neutral-400">{job.pickup || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-neutral-300 mb-1">Delivery Address</h4>
+                            <p className="text-sm text-neutral-400">{job.dropoff || 'Not specified'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center text-sm text-neutral-400">
+                    <span>Created: {formatDate(job.created_at)}</span>
+                    {job.deadline && (
+                      <span>Deadline: {formatDate(job.deadline)}</span>
+                    )}
                   </div>
-                  <div className="mb-1">
-                    <span className="font-semibold">To:</span> {dropoff || <span className="text-gray-500">(no dropoff)</span>}
+                  
+                  {job.user && (
+                    <div className="mt-3 p-3 bg-neutral-800 rounded-lg">
+                      <h4 className="text-sm font-medium text-neutral-300 mb-1">Customer</h4>
+                      <p className="text-sm text-neutral-400">
+                        {job.user.full_name} ({job.user.email})
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="mt-4">
+                    <Link
+                      href={`/staff/job/${job.id}`}
+                      className="text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
+                    >
+                      View Details →
+                    </Link>
                   </div>
-                  <div className="font-semibold mb-1">Status: {job.status}</div>
-                  <div className="text-xs text-gray-400 mb-1">Deadline: {formatDeadline(earliestDeadline)}</div>
                 </div>
-                <Link href={`/staff/job/${job.id}`}>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded">View</button>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   )
 } 

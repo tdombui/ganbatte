@@ -5,9 +5,10 @@ import { ParsedJob } from '@/types/job'
 import { SendHorizonal, LogOut, Settings } from 'lucide-react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import MultiLegForm from '@/app/components/ui/job/MultiLegForm'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuthContext } from '../providers'
 import AuthModal from '../components/auth/AuthModal'
-import { supabase } from '../../lib/auth'
+import UnifiedNavbar from '../components/nav/UnifiedNavbar'
+import { createClient } from '../../lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -20,26 +21,27 @@ function parseMarkdownBold(text: string): string {
 async function getAuthHeaders() {
     try {
         // Get the session from the current auth state instead of creating a new client call
+        const supabase = createClient()
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-            console.error('🔍 getAuthHeaders: Session error:', error)
+            console.error('getAuthHeaders: Session error:', error)
             throw error
         }
         
         if (!session) {
-            console.error('🔍 getAuthHeaders: No session found')
+            console.error('getAuthHeaders: No session found')
             throw new Error('No active session')
         }
         
         // Check if token is expired and refresh if needed
         const now = Math.floor(Date.now() / 1000)
         if (session.expires_at && session.expires_at < now) {
-            console.log('🔍 getAuthHeaders: Token expired, refreshing...')
+            console.log('getAuthHeaders: Token expired, refreshing...')
             const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
             
             if (refreshError || !refreshedSession) {
-                console.error('🔍 getAuthHeaders: Failed to refresh session:', refreshError)
+                console.error('getAuthHeaders: Failed to refresh session:', refreshError)
                 throw new Error('Failed to refresh session')
             }
             
@@ -54,13 +56,13 @@ async function getAuthHeaders() {
             'Authorization': `Bearer ${session.access_token}`
         }
     } catch (error) {
-        console.error('🔍 getAuthHeaders: Error getting auth headers:', error)
+        console.error('getAuthHeaders: Error getting auth headers:', error)
         throw error
     }
 }
 
 export default function ChatPage() {
-    const { user, loading: authLoading, isAuthenticated, logout } = useAuth()
+    const { user, loading: authLoading, isAuthenticated, logout } = useAuthContext()
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat')
     const [messages, setMessages] = useState<string[]>([])
@@ -119,16 +121,17 @@ export default function ChatPage() {
     useEffect(() => {
         const checkSessionPersistence = async () => {
             try {
+                const supabase = createClient()
                 const { data: { session } } = await supabase.auth.getSession()
-                console.log('🔍 Session persistence check:', { hasSession: !!session, userId: session?.user?.id })
+                console.log('Session persistence check:', { hasSession: !!session, userId: session?.user?.id })
                 
                 if (!session && isAuthenticated) {
-                    console.log('🔍 Session lost but user state shows authenticated, refreshing...')
+                    console.log('Session lost but user state shows authenticated, refreshing...')
                     // Force a re-check of authentication state
                     window.location.reload()
                 }
             } catch (error) {
-                console.error('🔍 Session persistence check error:', error)
+                console.error('Session persistence check error:', error)
             }
         }
 
@@ -166,7 +169,15 @@ export default function ChatPage() {
             if (['yes', 'y', 'yup', 'ye', 'yee'].includes(response)) {
                 setMessages((prev) => [...prev, `ai:Saving your job...`])
                 try {
+                    // Defensive check: ensure all required fields are present
+                    if (!parsedJob.parts || !Array.isArray(parsedJob.parts) || parsedJob.parts.length === 0 || !parsedJob.pickup || !parsedJob.dropoff || !parsedJob.deadline) {
+                        console.error('❌ Parsed job is missing required fields:', parsedJob)
+                        setMessages((prev) => [...prev, `ai:Failed to save job. Some required information is missing. Please try again.`])
+                        setAwaitingConfirmation(false)
+                        return
+                    }
                     const headers = await getAuthHeaders()
+                    console.log('🔍 Submitting job with payload:', parsedJob)
                     const res = await fetch('/api/createJob', {
                         method: 'POST',
                         headers,
@@ -446,17 +457,21 @@ export default function ChatPage() {
     // Show loading state while checking authentication
     if (authLoading) {
         return (
-            <div className="max-w-4xl mx-auto py-8">
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-white">Loading...</div>
+            <>
+                <UnifiedNavbar />
+                <div className="max-w-4xl mx-auto py-8 pt-24">
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-white">Loading...</div>
+                    </div>
                 </div>
-            </div>
+            </>
         )
     }
 
     return (
         <>
-            <div className="max-w-4xl mx-auto py-4 sm:py-8 px-4 sm:px-0">
+            <UnifiedNavbar />
+            <div className="max-w-4xl mx-auto py-4 sm:py-8 px-4 sm:px-0 pt-24">
                 {/* Header with Navigation */}
                 <div className="mb-6 sm:mb-8 px-4 sm:px-0">
                     {/* Title and settings on same line */}

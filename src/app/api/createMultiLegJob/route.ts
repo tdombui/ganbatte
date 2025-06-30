@@ -1,6 +1,6 @@
 // src/app/api/createMultiLegJob/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 interface Leg {
     part: string

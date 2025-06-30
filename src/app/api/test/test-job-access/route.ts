@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
     try {
@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const token = authHeader.replace('Bearer ', '')
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        // Verify the user
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
         
         if (authError || !user) {
-            console.log('❌ Auth error:', authError)
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            console.error('Authentication error:', authError)
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
         }
 
         console.log('🔍 User authenticated:', user.id)
@@ -37,31 +38,16 @@ export async function GET(request: NextRequest) {
             .eq('id', jobId)
             .single()
 
-        if (jobError) {
-            console.error('❌ Direct job lookup error:', jobError)
-            return NextResponse.json({ 
-                error: 'Job lookup failed', 
-                details: jobError.message,
-                code: jobError.code 
-            }, { status: 500 })
-        }
+        console.log('🔍 Job lookup result:', { job: !!job, error: jobError?.message })
 
-        if (!job) {
-            console.log('❌ Job not found in database:', jobId)
-            return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-        }
+        // Test 2: Try to get all jobs
+        console.log('🔍 Test 2: Getting all jobs...')
+        const { data: allJobs, error: allJobsError } = await supabase
+            .from('jobs')
+            .select('*')
+            .limit(5)
 
-        console.log('🔍 Job found:', job.id, 'user_id:', job.user_id, 'requesting user:', user.id)
-
-        // Test 2: Check if the job belongs to the user
-        if (job.user_id !== user.id) {
-            console.log('❌ Job does not belong to user. Job user_id:', job.user_id, 'Requesting user:', user.id)
-            return NextResponse.json({ 
-                error: 'Job does not belong to user',
-                jobUserId: job.user_id,
-                requestingUserId: user.id
-            }, { status: 403 })
-        }
+        console.log('🔍 All jobs result:', { count: allJobs?.length, error: allJobsError?.message })
 
         // Test 3: Try to get user's profile
         console.log('🔍 Test 3: Getting user profile...')

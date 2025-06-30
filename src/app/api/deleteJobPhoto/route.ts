@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 
 export async function POST(req: Request) {
     try {
@@ -11,11 +10,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
         }
 
-        // Extract the token
-        const token = authHeader.replace('Bearer ', '')
-        
         // Verify the user with the token
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
         
         if (authError || !user) {
             console.error('Authentication error:', authError)
@@ -47,21 +44,8 @@ export async function POST(req: Request) {
 
         console.log('Deleting photo from job:', jobId, 'photo:', photoUrl)
 
-        // Create a new Supabase client with the user's token for RLS
-        const supabaseWithAuth = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            }
-        )
-
         // Get the current photo URLs for the job
-        const { data: jobData, error: fetchError } = await supabaseWithAuth
+        const { data: jobData, error: fetchError } = await supabase
             .from('jobs')
             .select('photo_urls')
             .eq('id', jobId)
@@ -76,7 +60,7 @@ export async function POST(req: Request) {
         const newUrls = (jobData?.photo_urls || []).filter((url: string) => url !== photoUrl)
 
         // Update the job with the new photo URLs
-        const { error: updateError } = await supabaseWithAuth
+        const { error: updateError } = await supabase
             .from('jobs')
             .update({ photo_urls: newUrls })
             .eq('id', jobId)

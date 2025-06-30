@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 // PUT - Update a staff member
 export async function PUT(
@@ -8,12 +8,12 @@ export async function PUT(
 ) {
   try {
     // Check if user is admin
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabaseAdmin.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -35,7 +35,7 @@ export async function PUT(
     }
 
     // Update profile
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({ 
         full_name,
@@ -49,7 +49,7 @@ export async function PUT(
     }
 
     // Update staff record
-    const { error: staffError } = await supabase
+    const { error: staffError } = await supabaseAdmin
       .from('staff')
       .upsert({
         id: params.id,
@@ -81,12 +81,12 @@ export async function DELETE(
 ) {
   try {
     // Check if user is admin
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabaseAdmin.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -102,7 +102,7 @@ export async function DELETE(
     }
 
     // Delete staff record first
-    const { error: staffError } = await supabase
+    const { error: staffError } = await supabaseAdmin
       .from('staff')
       .delete()
       .eq('id', params.id)
@@ -113,7 +113,7 @@ export async function DELETE(
     }
 
     // Update profile to customer role (don't delete the user entirely)
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({ role: 'customer' })
       .eq('id', params.id)

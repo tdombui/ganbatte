@@ -1,62 +1,85 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from './lib/supabase/middleware'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  console.log('🔍 Middleware: Processing request for:', request.nextUrl.pathname)
   
-  // Temporarily disable middleware for testing
-  console.log('🔍 Middleware: Temporarily disabled for testing, path:', req.nextUrl.pathname)
-  return res
-  
-  // const supabase = createMiddlewareClient({ req, res })
+  try {
+    const { supabase, response } = createClient(request)
 
-  // // Get the current user
-  // const { data: { user } } = await supabase.auth.getUser()
-
-  // // Check if the route is a staff route
-  // const isStaffRoute = req.nextUrl.pathname.startsWith('/staff')
-  
-  // if (isStaffRoute) {
-  //   console.log('🔍 Middleware: Staff route detected:', req.nextUrl.pathname)
-  //   console.log('🔍 Middleware: User authenticated:', !!user)
+    // Refresh session if expired - required for Server Components
+    const { data: { session }, error } = await supabase.auth.getSession()
     
-  //   // If no user, redirect to sign in
-  //   if (!user) {
-  //     console.log('🔍 Middleware: No user, redirecting to auth')
-  //     const redirectUrl = new URL('/auth/callback', req.url)
-  //     redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
-  //     return NextResponse.redirect(redirectUrl)
-  //   }
+    console.log('🔍 Middleware: Session check:', { 
+      hasSession: !!session, 
+      userId: session?.user?.id,
+      error: error?.message 
+    })
+    
+    if (error) {
+      console.error('Middleware auth error:', error)
+      // If there's an auth error, clear the session and redirect to auth
+      const authResponse = NextResponse.redirect(new URL('/auth', request.url))
+      authResponse.cookies.delete('sb-access-token')
+      authResponse.cookies.delete('sb-refresh-token')
+      return authResponse
+    }
 
-  //   // Check if user has staff role
-  //   const { data: profile, error } = await supabase
-  //     .from('profiles')
-  //     .eq('id', user.id)
-  //     .single()
+    // Define protected routes
+    const protectedRoutes = ['/staff', '/admin', '/chat', '/jobs', '/profile']
+    const isProtectedRoute = protectedRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    )
 
-  //   console.log('🔍 Middleware: Profile lookup result:', { profile, error })
+    console.log('🔍 Middleware: Route check:', { 
+      pathname: request.nextUrl.pathname,
+      isProtectedRoute,
+      hasSession: !!session
+    })
 
-  //   if (error) {
-  //     console.error('🔍 Middleware: Error fetching profile:', error)
-  //     // If there's an error fetching profile, redirect to home
-  //     return NextResponse.redirect(new URL('/', req.url))
-  //   }
+    // If it's a protected route and no session, redirect to auth
+    if (isProtectedRoute && !session) {
+      console.log('🔍 Middleware: Redirecting to auth - no session for protected route')
+      const redirectUrl = new URL('/auth', request.url)
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
 
-  //   if (profile?.role !== 'staff' && profile?.role !== 'admin') {
-  //     console.log('🔍 Middleware: User is not staff/admin, redirecting to home')
-  //     // Redirect to home page
-  //     return NextResponse.redirect(new URL('/', req.url))
-  //   }
+    // If user is authenticated and trying to access auth page, redirect to home
+    if (session && request.nextUrl.pathname === '/auth') {
+      console.log('🔍 Middleware: Redirecting to home - authenticated user on auth page')
+      return NextResponse.redirect(new URL('/', request.url))
+    }
 
-  //   console.log('🔍 Middleware: User authorized, proceeding')
-  // }
-
-  // return res
+    console.log('🔍 Middleware: Continuing with request')
+    // For all other requests, continue
+    return response
+  } catch (error) {
+    console.error('Middleware error:', error)
+    
+    // If middleware fails, redirect to auth page to reset the session
+    const redirectUrl = new URL('/auth', request.url)
+    redirectUrl.searchParams.set('error', 'session_error')
+    const authResponse = NextResponse.redirect(redirectUrl)
+    
+    // Clear any potentially corrupted cookies
+    authResponse.cookies.delete('sb-access-token')
+    authResponse.cookies.delete('sb-refresh-token')
+    
+    return authResponse
+  }
 }
 
 export const config = {
   matcher: [
-    '/staff/:path*',
-    '/api/staff/:path*',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     * - api routes (handled separately)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/|api/).*)',
   ],
-} 
+}

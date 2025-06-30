@@ -4,6 +4,7 @@ import { useState } from 'react'
 import AddressInput from './AddressInput'
 import DeadlinePicker from './DeadlinePicker'
 import { useRouter } from 'next/navigation'
+import { createClient } from '../../../../lib/supabase/client'
 
 // Simple toast component (inline, for demo)
 function Toast({ message, onClose }: { message: string, onClose: () => void }) {
@@ -81,7 +82,8 @@ export default function MultiLegForm() {
         const payload = { parts, deadline, legs }
         try {
             // Get auth headers
-            const { data: { session } } = await import('@/lib/auth').then(m => m.supabase.auth.getSession())
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',
             }
