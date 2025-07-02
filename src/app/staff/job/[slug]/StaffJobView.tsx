@@ -55,20 +55,31 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
         const file = e.target.files?.[0]
         if (!file) return
 
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB')
+            return
+        }
+
         console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type })
         setUploading(true)
         
         try {
-            const filePath = `${job.id}/${Date.now()}-${file.name}`
+            // Sanitize filename to prevent issues
+            const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+            const filePath = `${job.id}/${Date.now()}-${sanitizedFileName}`
             console.log('File path:', filePath)
 
             // 1. Upload to Supabase Storage from the browser
             const supabase = createClient()
-            const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file)
+            const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            })
+            
             if (uploadError) {
                 console.error('Upload error:', uploadError)
                 alert('Upload failed: ' + uploadError.message)
-                setUploading(false)
                 return
             }
 
@@ -80,7 +91,6 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
             if (!publicUrl) {
                 console.error('Failed to get public URL')
                 alert('Failed to get public URL')
-                setUploading(false)
                 return
             }
 
@@ -93,11 +103,10 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
             if (!token) {
                 console.error('No session token available')
                 alert('No session token available. Please refresh the page and try again.')
-                setUploading(false)
                 return
             }
 
-            console.log('Updating job with photo URL')
+            console.log('Updating job with file URL')
 
             const res = await fetch('/api/updateJob', {
                 method: 'POST',
@@ -119,14 +128,16 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
                 setJob(prev => ({ ...prev, photo_urls: [...(prev.photo_urls || []), publicUrl] }))
             } else {
                 const errorData = await res.json().catch(() => ({}))
-                console.error('Failed to update job with photo URL:', errorData)
-                alert('Failed to update job with photo URL: ' + (errorData.error || 'Unknown error'))
+                console.error('Failed to update job with file URL:', errorData)
+                alert('Failed to update job with file URL: ' + (errorData.error || 'Unknown error'))
             }
         } catch (error) {
             console.error('Unexpected error in file upload:', error)
             alert('Unexpected error during upload. Please try again.')
         } finally {
             setUploading(false)
+            // Clear the input to allow re-uploading the same file
+            e.target.value = ''
         }
     }
 

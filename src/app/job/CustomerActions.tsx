@@ -6,19 +6,17 @@ import { Camera, Upload, X, FileText } from 'lucide-react'
 interface Job {
     id: string;
     status?: string;
-    photo_urls: string[];
+    photo_urls?: string[];
 }
 
-export interface StaffActionsProps {
+export interface CustomerActionsProps {
     job: Job;
     uploading?: boolean;
-    onStatusChange: (newStatus: string) => void;
     onFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
     onDeletePhoto: (url: string) => void;
-    onConfirmPickup?: () => void;
 }
 
-export default function StaffActions({ job, uploading, onStatusChange, onFileUpload, onDeletePhoto, onConfirmPickup }: StaffActionsProps) {
+export default function CustomerActions({ job, uploading, onFileUpload, onDeletePhoto }: CustomerActionsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
     const [uploadProgress, setUploadProgress] = useState<string>('')
@@ -76,36 +74,8 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
 
     return (
         <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white mt-6">
-            <h2 className="text-2xl font-bold">Staff Actions</h2>
-            <div>
-                <label htmlFor="status" className="block font-semibold mb-2">Update Status</label>
-                <select
-                    id="status"
-                    value={job.status || 'booked'}
-                    onChange={(e) => onStatusChange(e.target.value)}
-                    className="bg-neutral-900 text-white w-full p-2 rounded"
-                >
-                    <option value="booked">Booked</option>
-                    <option value="en_route">En Route</option>
-                    <option value="loading">Loading</option>
-                    <option value="driving">Driving to Dropoff</option>
-                    <option value="completed">Completed</option>
-                </select>
-            </div>
-
-            {/* Confirm Pickup Complete Button - only show when at pickup location and not yet driving */}
-            {job.status === 'loading' && onConfirmPickup && (
-                <div>
-                    <button
-                        onClick={onConfirmPickup}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-                    >
-                        ✅ Confirm Pickup Complete
-                    </button>
-                    <p className="text-sm text-gray-300 mt-1">Click when you&apos;ve finished loading and are ready to drive to dropoff</p>
-                </div>
-            )}
-
+            <h2 className="text-2xl font-bold">Job Files</h2>
+            
             <div>
                 <label className="block font-semibold mb-2">Upload Files</label>
                 
@@ -167,7 +137,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                 <div>
                     <h3 className="font-semibold mb-2">Uploaded Files</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {(job.photo_urls || []).map((url, index) => (
+                        {job.photo_urls.map((url, index) => (
                             <div key={url} className="relative bg-neutral-900 rounded-lg p-2">
                                 {isImageFile(url) ? (
                                     <img 
