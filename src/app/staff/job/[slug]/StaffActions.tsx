@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, useRef, useState } from 'react'
+import { ChangeEvent, useRef, useState, useEffect } from 'react'
 import { Camera, Upload, X, FileText } from 'lucide-react'
 
 interface Job {
@@ -22,42 +22,90 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
     const fileInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
     const [uploadProgress, setUploadProgress] = useState<string>('')
+    const [debugInfo, setDebugInfo] = useState<string>('')
+
+    // Debug function to show info on screen
+    const showDebug = (message: string) => {
+        console.log('🔍 Debug:', message)
+        setDebugInfo(message)
+        setTimeout(() => setDebugInfo(''), 5000)
+    }
 
     const handleTakePhotoClick = () => {
+        showDebug('Take Photo clicked')
+        
         if (cameraInputRef.current) {
             // Clear any previous files
             cameraInputRef.current.value = ''
+            
+            // Set capture attribute for mobile camera
+            cameraInputRef.current.setAttribute('capture', 'environment')
+            
+            showDebug('Opening camera...')
             cameraInputRef.current.click()
+        } else {
+            showDebug('Camera input ref not found')
         }
     }
 
     const handleUploadFileClick = () => {
+        showDebug('Upload File clicked')
+        
         if (fileInputRef.current) {
             // Clear any previous files
             fileInputRef.current.value = ''
+            
+            // Remove capture attribute for file picker
+            fileInputRef.current.removeAttribute('capture')
+            
+            showDebug('Opening file picker...')
             fileInputRef.current.click()
+        } else {
+            showDebug('File input ref not found')
         }
     }
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-        if (!file) return
+        showDebug(`File selected: ${file?.name || 'none'} (${file?.size || 0} bytes)`)
+        
+        if (!file) {
+            showDebug('No file selected')
+            return
+        }
 
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
+            showDebug('File too large (>10MB)')
             alert('File size must be less than 10MB')
             return
         }
 
         // Show upload progress
         setUploadProgress(`Uploading ${file.name}...`)
+        showDebug(`Starting upload for ${file.name}`)
         
         // Call the parent upload handler
         onFileUpload(e)
         
         // Clear progress after a delay
-        setTimeout(() => setUploadProgress(''), 3000)
+        setTimeout(() => {
+            setUploadProgress('')
+            showDebug('Upload process completed')
+        }, 3000)
     }
+
+    // Monitor for mobile camera issues
+    useEffect(() => {
+        const checkMobileCamera = () => {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            if (isMobile) {
+                showDebug('Mobile device detected - camera may have issues')
+            }
+        }
+        
+        checkMobileCamera()
+    }, [])
 
     const isImageFile = (url: string) => {
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
@@ -77,6 +125,14 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
     return (
         <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white mt-6">
             <h2 className="text-2xl font-bold">Staff Actions</h2>
+            
+            {/* Debug info display */}
+            {debugInfo && (
+                <div className="bg-yellow-900/50 border border-yellow-600 p-3 rounded-lg">
+                    <p className="text-yellow-200 text-sm font-mono">{debugInfo}</p>
+                </div>
+            )}
+            
             <div>
                 <label htmlFor="status" className="block font-semibold mb-2">Update Status</label>
                 <select
@@ -147,6 +203,18 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                     </button>
                 </div>
                 
+                {/* Debug button for testing */}
+                <button
+                    onClick={() => {
+                        showDebug('Test button clicked - checking file inputs')
+                        console.log('Camera input:', cameraInputRef.current)
+                        console.log('File input:', fileInputRef.current)
+                    }}
+                    className="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+                >
+                    🔍 Debug File Inputs
+                </button>
+                
                 {(uploading || uploadProgress) && (
                     <div className="mt-2">
                         <p className="text-sm text-blue-300">{uploadProgress || 'Uploading...'}</p>
@@ -167,7 +235,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                 <div>
                     <h3 className="font-semibold mb-2">Uploaded Files</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {(job.photo_urls || []).map((url, index) => (
+                        {job.photo_urls.map((url, index) => (
                             <div key={url} className="relative bg-neutral-900 rounded-lg p-2">
                                 {isImageFile(url) ? (
                                     <img 

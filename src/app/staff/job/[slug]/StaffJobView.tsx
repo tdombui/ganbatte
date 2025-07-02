@@ -53,7 +53,10 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-        if (!file) return
+        if (!file) {
+            console.log('🔍 No file selected')
+            return
+        }
 
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
@@ -61,52 +64,64 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
             return
         }
 
-        console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type })
+        console.log('🔍 Starting file upload:', { 
+            fileName: file.name, 
+            fileSize: file.size, 
+            fileType: file.type,
+            lastModified: file.lastModified
+        })
         setUploading(true)
         
         try {
             // Sanitize filename to prevent issues
             const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
             const filePath = `${job.id}/${Date.now()}-${sanitizedFileName}`
-            console.log('File path:', filePath)
+            console.log('🔍 File path:', filePath)
 
             // 1. Upload to Supabase Storage from the browser
             const supabase = createClient()
+            console.log('🔍 Uploading to Supabase storage...')
+            
             const { error: uploadError } = await supabase.storage.from('job-photos').upload(filePath, file, {
                 cacheControl: '3600',
                 upsert: false
             })
             
             if (uploadError) {
-                console.error('Upload error:', uploadError)
+                console.error('🔍 Upload error:', uploadError)
                 alert('Upload failed: ' + uploadError.message)
+                setUploading(false)
                 return
             }
 
-            console.log('File uploaded successfully to storage')
+            console.log('🔍 File uploaded successfully to storage')
 
             // 2. Get the public URL
+            console.log('🔍 Getting public URL...')
             const { data } = supabase.storage.from('job-photos').getPublicUrl(filePath)
             const publicUrl = data?.publicUrl
             if (!publicUrl) {
-                console.error('Failed to get public URL')
+                console.error('🔍 Failed to get public URL')
                 alert('Failed to get public URL')
+                setUploading(false)
                 return
             }
 
-            console.log('Public URL:', publicUrl)
+            console.log('🔍 Public URL:', publicUrl)
 
             // 3. Call API to update the jobs table
+            console.log('🔍 Getting session token...')
             const { data: { session } } = await supabase.auth.getSession()
             const token = session?.access_token
 
             if (!token) {
-                console.error('No session token available')
+                console.error('🔍 No session token available')
                 alert('No session token available. Please refresh the page and try again.')
+                setUploading(false)
                 return
             }
 
-            console.log('Updating job with file URL')
+            console.log('🔍 Updating job with file URL...')
 
             const res = await fetch('/api/updateJob', {
                 method: 'POST',
@@ -120,21 +135,23 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
                 }),
             })
 
-            console.log('Update job response status:', res.status)
+            console.log('🔍 Update job response status:', res.status)
 
             if (res.ok) {
                 const responseData = await res.json()
-                console.log('Job updated successfully:', responseData)
+                console.log('🔍 Job updated successfully:', responseData)
                 setJob(prev => ({ ...prev, photo_urls: [...(prev.photo_urls || []), publicUrl] }))
+                alert('File uploaded successfully!')
             } else {
                 const errorData = await res.json().catch(() => ({}))
-                console.error('Failed to update job with file URL:', errorData)
+                console.error('🔍 Failed to update job with file URL:', errorData)
                 alert('Failed to update job with file URL: ' + (errorData.error || 'Unknown error'))
             }
         } catch (error) {
-            console.error('Unexpected error in file upload:', error)
+            console.error('🔍 Unexpected error in file upload:', error)
             alert('Unexpected error during upload. Please try again.')
         } finally {
+            console.log('🔍 Upload process completed, setting uploading to false')
             setUploading(false)
             // Clear the input to allow re-uploading the same file
             e.target.value = ''
