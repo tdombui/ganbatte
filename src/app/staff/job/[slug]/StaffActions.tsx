@@ -19,9 +19,7 @@ export interface StaffActionsProps {
 }
 
 export default function StaffActions({ job, uploading, onStatusChange, onFileUpload, onDeletePhoto, onConfirmPickup }: StaffActionsProps) {
-    const cameraInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const mobileInputRef = useRef<HTMLInputElement>(null)
     const [uploadProgress, setUploadProgress] = useState<string>('')
     const [debugInfo, setDebugInfo] = useState<string>('')
     const [isMobile, setIsMobile] = useState(false)
@@ -30,7 +28,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
     const showDebug = (message: string) => {
         console.log('🔍 Debug:', message)
         setDebugInfo(message)
-        setTimeout(() => setDebugInfo(''), 8000) // Keep debug longer
+        setTimeout(() => setDebugInfo(''), 10000) // Keep debug longer
     }
 
     // Check if device is mobile
@@ -39,7 +37,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
             const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
             setIsMobile(mobile)
             if (mobile) {
-                showDebug('📱 Mobile device detected - using mobile-specific upload')
+                showDebug('📱 Mobile device detected - using simple file input')
             } else {
                 showDebug('🖥️ Desktop device detected')
             }
@@ -50,55 +48,46 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
     const handleTakePhotoClick = () => {
         showDebug('📸 Take Photo clicked')
         
-        if (isMobile) {
-            // Mobile: Use dedicated mobile input with capture
-            if (mobileInputRef.current) {
-                mobileInputRef.current.value = ''
-                mobileInputRef.current.setAttribute('capture', 'environment')
-                mobileInputRef.current.setAttribute('accept', 'image/*')
-                showDebug('📱 Mobile: Opening camera...')
-                mobileInputRef.current.click()
+        if (fileInputRef.current) {
+            // Clear any previous files
+            fileInputRef.current.value = ''
+            
+            // Simple approach: just accept images, let mobile decide camera vs gallery
+            fileInputRef.current.setAttribute('accept', 'image/*')
+            
+            // For mobile, add capture attribute
+            if (isMobile) {
+                fileInputRef.current.setAttribute('capture', 'environment')
+                showDebug('📱 Mobile: Opening camera/gallery...')
             } else {
-                showDebug('❌ Mobile input ref not found')
-            }
-        } else {
-            // Desktop: Use regular camera input
-            if (cameraInputRef.current) {
-                cameraInputRef.current.value = ''
-                cameraInputRef.current.removeAttribute('capture')
-                cameraInputRef.current.setAttribute('accept', 'image/*')
+                fileInputRef.current.removeAttribute('capture')
                 showDebug('🖥️ Desktop: Opening file picker...')
-                cameraInputRef.current.click()
-            } else {
-                showDebug('❌ Camera input ref not found')
             }
+            
+            // Click the input
+            fileInputRef.current.click()
+        } else {
+            showDebug('❌ File input ref not found')
         }
     }
 
     const handleUploadFileClick = () => {
         showDebug('📁 Upload File clicked')
         
-        if (isMobile) {
-            // Mobile: Use mobile input without capture
-            if (mobileInputRef.current) {
-                mobileInputRef.current.value = ''
-                mobileInputRef.current.removeAttribute('capture')
-                mobileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls')
-                showDebug('📱 Mobile: Opening file picker...')
-                mobileInputRef.current.click()
-            } else {
-                showDebug('❌ Mobile input ref not found')
-            }
+        if (fileInputRef.current) {
+            // Clear any previous files
+            fileInputRef.current.value = ''
+            
+            // Accept all file types
+            fileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls')
+            
+            // Remove capture attribute for file picker
+            fileInputRef.current.removeAttribute('capture')
+            
+            showDebug('📁 Opening file picker...')
+            fileInputRef.current.click()
         } else {
-            // Desktop: Use regular file input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = ''
-                fileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls')
-                showDebug('🖥️ Desktop: Opening file picker...')
-                fileInputRef.current.click()
-            } else {
-                showDebug('❌ File input ref not found')
-            }
+            showDebug('❌ File input ref not found')
         }
     }
 
@@ -190,28 +179,10 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
             <div>
                 <label className="block font-semibold mb-2">Upload Files</label>
                 
-                {/* Desktop Camera Input */}
+                {/* Single, simple file input */}
                 <input
                     type="file"
-                    accept="image/*"
-                    ref={cameraInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                />
-                
-                {/* Desktop File Input */}
-                <input
-                    type="file"
-                    accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls"
                     ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                />
-                
-                {/* Mobile-specific Input */}
-                <input
-                    type="file"
-                    ref={mobileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
                 />
@@ -239,37 +210,33 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                 <button
                     onClick={() => {
                         showDebug(`🔍 Test button clicked - Mobile: ${isMobile}`)
-                        console.log('Camera input:', cameraInputRef.current)
                         console.log('File input:', fileInputRef.current)
-                        console.log('Mobile input:', mobileInputRef.current)
-                        if (mobileInputRef.current) {
-                            console.log('Mobile input attributes:', {
-                                accept: mobileInputRef.current.accept,
-                                capture: mobileInputRef.current.getAttribute('capture'),
-                                value: mobileInputRef.current.value,
-                                files: mobileInputRef.current.files?.length || 0
+                        if (fileInputRef.current) {
+                            console.log('File input attributes:', {
+                                accept: fileInputRef.current.accept,
+                                capture: fileInputRef.current.getAttribute('capture'),
+                                value: fileInputRef.current.value,
+                                files: fileInputRef.current.files?.length || 0
                             })
                         }
                     }}
                     className="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded transition-colors"
                 >
-                    🔍 Debug File Inputs
+                    🔍 Debug File Input
                 </button>
                 
-                {/* Force mobile test button */}
-                {isMobile && (
-                    <button
-                        onClick={() => {
-                            showDebug('🔄 Testing mobile file input directly...')
-                            if (mobileInputRef.current) {
-                                mobileInputRef.current.click()
-                            }
-                        }}
-                        className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition-colors"
-                    >
-                        🚨 Force Mobile File Input Test
-                    </button>
-                )}
+                {/* Direct file input test */}
+                <button
+                    onClick={() => {
+                        showDebug('🔄 Testing file input directly...')
+                        if (fileInputRef.current) {
+                            fileInputRef.current.click()
+                        }
+                    }}
+                    className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+                >
+                    🚨 Direct File Input Test
+                </button>
                 
                 {(uploading || uploadProgress) && (
                     <div className="mt-2">
