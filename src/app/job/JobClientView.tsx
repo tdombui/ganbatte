@@ -41,7 +41,7 @@ export default function JobClientView({ job }: { job: JobType }) {
             <>
                 <SmartNavbar />
                 <div className="mt-16 max-w-xl mx-auto py-12">
-                    <SingleLegJobView job={job} />
+                    <SingleLegJobView job={job} onJobUpdate={() => {}} />
                 </div>
             </>
         );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, ChangeEvent } from 'react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import { JobLeg } from '@/types/job'
 import ProgressBar from '@/app/components/ui/job/ProgressBar'
+import { useAuthContext } from '../../providers'
 
 interface MultiLegJobViewProps {
     job: {
@@ -16,6 +17,7 @@ interface MultiLegJobViewProps {
 }
 
 export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
+    const { user } = useAuthContext()
     const mapRef = useRef<HTMLDivElement>(null)
     const [isEditing, setIsEditing] = useState(false)
     const [editedJob, setEditedJob] = useState(job)
@@ -24,13 +26,22 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
         duration: number
     } | null>(null)
     const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null)
-    const [completed, setCompleted] = useState<number[]>([])
-    const [current, setCurrent] = useState(0)
 
-    const progressNodes = job.legs.flatMap((leg, idx) => [
-        `Pickup ${idx + 1}`,
-        `Dropoff ${idx + 1}`
-    ])
+    // Check if user is staff or admin
+    const isStaffOrAdmin = user?.role === 'staff' || user?.role === 'admin'
+
+    // Haversine function for distance calculation
+    function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+        const toRad = (x: number) => (x * Math.PI) / 180
+        const R = 6371e3
+        const dLat = toRad(lat2 - lat1)
+        const dLon = toRad(lon2 - lon1)
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return R * c
+    }
 
     useEffect(() => {
         if (isEditing || !window.google || !mapRef.current || !Array.isArray(job.legs)) return
@@ -121,42 +132,6 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
             }
         }
     }, [job.id, job.status])
-
-    // Calculate progress based on driver location
-    useEffect(() => {
-        if (!driverLocation) return
-        const completedNodes: number[] = []
-        let curr = 0
-        // Build a flat list of all pickup/dropoff points in order
-        const points: { lat: number; lng: number }[] = []
-        job.legs.forEach(leg => {
-            if (leg.pickup_lat && leg.pickup_lng) points.push({ lat: leg.pickup_lat, lng: leg.pickup_lng })
-            if (leg.dropoff_lat && leg.dropoff_lng) points.push({ lat: leg.dropoff_lat, lng: leg.dropoff_lng })
-        })
-        function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
-            const toRad = (x: number) => (x * Math.PI) / 180
-            const R = 6371e3
-            const dLat = toRad(lat2 - lat1)
-            const dLon = toRad(lon2 - lon1)
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-            return R * c
-        }
-        // Mark nodes as complete if driver is within 100m, in order
-        for (let i = 0; i < points.length; i++) {
-            const dist = haversine(driverLocation.lat, driverLocation.lng, points[i].lat, points[i].lng)
-            if (dist < 100) {
-                completedNodes.push(i)
-                curr = i + 1
-            } else {
-                break // Only mark in order
-            }
-        }
-        setCompleted(completedNodes)
-        setCurrent(curr)
-    }, [driverLocation, job.id, job.legs])
 
     const getGoogleMapsLink = () => {
         const validLegs = job.legs?.filter(
@@ -254,18 +229,66 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
         }
     };
 
+    // Calculate progress percentage and status for multi-leg jobs
+    const getProgressInfo = () => {
+        if (!driverLocation) {
+            return { percentage: 0, status: 'Waiting to start', color: 'blue' as const }
+        }
+
+        // Calculate progress based on completed legs and current position
+        const totalLegs = job.legs.length
+        let completedLegs = 0
+        let currentStatus = 'En route to first pickup'
+
+        // Check which legs are completed based on driver location
+        for (let i = 0; i < job.legs.length; i++) {
+            const leg = job.legs[i]
+            if (leg.pickup_lat && leg.pickup_lng && leg.dropoff_lat && leg.dropoff_lng) {
+                const distToPickup = haversine(driverLocation.lat, driverLocation.lng, leg.pickup_lat, leg.pickup_lng)
+                const distToDropoff = haversine(driverLocation.lat, driverLocation.lng, leg.dropoff_lat, leg.dropoff_lng)
+                
+                if (distToDropoff < 100) {
+                    // At dropoff for this leg
+                    completedLegs = i + 1
+                    if (i === job.legs.length - 1) {
+                        currentStatus = 'Job completed'
+                    } else {
+                        currentStatus = `En route to pickup ${i + 2}`
+                    }
+                } else if (distToPickup < 100) {
+                    // At pickup for this leg
+                    completedLegs = i
+                    currentStatus = `At pickup ${i + 1}`
+                } else {
+                    // Not at this leg yet
+                    break
+                }
+            }
+        }
+
+        const percentage = Math.min(100, (completedLegs / totalLegs) * 100)
+        
+        // Determine color based on progress
+        let color: 'blue' | 'green' | 'yellow' | 'purple' = 'blue'
+        if (percentage >= 100) color = 'purple'
+        else if (percentage >= 75) color = 'green'
+        else if (percentage >= 50) color = 'yellow'
+
+        return { percentage, status: currentStatus, color }
+    }
+
+    const progressInfo = getProgressInfo()
+
     return (
         <div className=" space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white">
-            {(job.status === 'active' || job.status === 'currently driving') && (
-                <ProgressBar nodes={progressNodes} current={current} completed={completed} />
-            )}
+            {/* Header at the top */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Multi-Trip Job Overview</h1>
-                {!isEditing ? (
+                {isStaffOrAdmin && !isEditing ? (
                     <button onClick={() => setIsEditing(true)} className="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-4 rounded">
                         Edit
                     </button>
-                ) : (
+                ) : isStaffOrAdmin && isEditing ? (
                     <div className="flex gap-2">
                         <button onClick={handleSave} className="bg-green-500 hover:bg-green-400 text-white font-semibold py-2 px-4 rounded">
                             Save
@@ -274,8 +297,17 @@ export default function MultiLegJobView({ job }: MultiLegJobViewProps) {
                             Cancel
                         </button>
                     </div>
-                )}
+                ) : null}
             </div>
+
+            {/* Progress Bar */}
+            {(job.status === 'active' || job.status === 'currently driving') && (
+                <ProgressBar 
+                    percentage={progressInfo.percentage} 
+                    status={progressInfo.status} 
+                    color={progressInfo.color} 
+                />
+            )}
 
             {isEditing ? (
                 <div>

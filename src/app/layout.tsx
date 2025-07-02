@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ganbatte - The Payload Movers",
+  title: "GanbattePM - The Payload Movers",
   description: "Last-mile logistics for mission-critical payloads in automotive, aerospace, aviation, marine, and manufacturing. Move payloads by text. AI handles the rest.",
 };
 

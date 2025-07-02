@@ -15,9 +15,10 @@ export interface StaffActionsProps {
     onStatusChange: (newStatus: string) => void;
     onFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
     onDeletePhoto: (url: string) => void;
+    onConfirmPickup?: () => void;
 }
 
-export default function StaffActions({ job, uploading, onStatusChange, onFileUpload, onDeletePhoto }: StaffActionsProps) {
+export default function StaffActions({ job, uploading, onStatusChange, onFileUpload, onDeletePhoto, onConfirmPickup }: StaffActionsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleTakePhotoClick = () => {
@@ -46,10 +47,25 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                     className="bg-neutral-900 text-white w-full p-2 rounded"
                 >
                     <option value="booked">Booked</option>
-                    <option value="currently driving">Currently Driving</option>
-                    <option value="delivered">Delivered</option>
+                    <option value="en_route">En Route</option>
+                    <option value="loading">Loading</option>
+                    <option value="driving">Driving to Dropoff</option>
+                    <option value="completed">Completed</option>
                 </select>
             </div>
+
+            {/* Confirm Pickup Complete Button - only show when at pickup location and not yet driving */}
+            {job.status === 'loading' && onConfirmPickup && (
+                <div>
+                    <button
+                        onClick={onConfirmPickup}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                    >
+                        ✅ Confirm Pickup Complete
+                    </button>
+                    <p className="text-sm text-gray-300 mt-1">Click when you&apos;ve finished loading and are ready to drive to dropoff</p>
+                </div>
+            )}
 
             <div>
                 <label className="block font-semibold mb-2">Upload Photo</label>

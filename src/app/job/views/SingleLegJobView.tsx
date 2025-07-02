@@ -5,8 +5,11 @@ import { ParsedJob } from '@/types/job'
 import { formatDeadline } from '@/lib/formatDeadline'
 import ProgressBar from '@/app/components/ui/job/ProgressBar'
 import { createClient } from '@/lib/supabase/client'
+import { useAuthContext } from '../../providers'
+import { PRICING, HQ_ADDRESS, HQ_COORDINATES } from '@/lib/config'
 
-export default function SingleLegJobView({ job }: { job: ParsedJob }) {
+export default function SingleLegJobView({ job, onJobUpdate }: { job: ParsedJob; onJobUpdate?: (updatedJob: ParsedJob) => void }) {
+    const { user } = useAuthContext()
     const [isEditing, setIsEditing] = useState(false)
     const [editedJob, setEditedJob] = useState(job)
 
@@ -14,14 +17,11 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
     console.log('🔍 Job data received:', job)
     console.log('🔍 Job parts:', job.parts, 'Type:', typeof job.parts, 'Is array:', Array.isArray(job.parts))
 
-    const [route, setRoute] = useState<{
-        distanceMeters: number
-        duration: number
-    } | null>(null)
-
     const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null)
-    const [completed, setCompleted] = useState<number[]>([0])
-    const [current, setCurrent] = useState(0)
+    const [route, setRoute] = useState<{
+        distanceMeters?: number
+        duration?: number
+    } | null>(null)
 
     // Get coordinates from job
     const pickupLat = (job as { pickup_lat?: number }).pickup_lat
@@ -45,43 +45,63 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
     // Ensure parts is always an array
     const safeParts = Array.isArray(job.parts) ? job.parts : (job.parts ? [job.parts] : [])
 
-    const getDistanceMiles = () => route ? (route.distanceMeters / 1609.34).toFixed(1) : '—'
+    const getDistanceMiles = () => {
+        if (route && route.distanceMeters) {
+            return (route.distanceMeters / 1609.34).toFixed(1)
+        }
+        
+        // Fallback: calculate distance using coordinates if available
+        if (pickupLat && pickupLng && dropoffLat && dropoffLng) {
+            const distanceMeters = haversine(pickupLat, pickupLng, dropoffLat, dropoffLng)
+            return (distanceMeters / 1609.34).toFixed(1)
+        }
+        
+        return '—'
+    }
 
     const getPrice = () => {
-        if (!route) return '—'
-        const baseRate = 30
-        const perMile = 1.25
-        const partRate = 5
+        let distanceMiles: number
+        
+        if (route && route.distanceMeters) {
+            distanceMiles = route.distanceMeters / 1609.34
+        } else if (pickupLat && pickupLng && dropoffLat && dropoffLng) {
+            // Fallback: calculate distance using coordinates
+            const distanceMeters = haversine(pickupLat, pickupLng, dropoffLat, dropoffLng)
+            distanceMiles = distanceMeters / 1609.34
+        } else {
+            return '—'
+        }
+        
         const partCount = safeParts.length
-        const distanceMiles = route.distanceMeters / 1609.34
         
-        // Calculate base price
-        const basePrice = baseRate + distanceMiles * perMile + partCount * partRate
+        // Calculate base price using HQ-based total distance
+        const basePrice = PRICING.baseRate + distanceMiles * PRICING.perMile + partCount * PRICING.partRate
         
-        // Apply 25% discount for advance bookings (24+ hours)
+        // Apply discount for advance bookings
         let finalPrice = basePrice
         if (job.deadline) {
             const deadlineTime = new Date(job.deadline).getTime()
             const currentTime = new Date().getTime()
             const hoursUntilDeadline = (deadlineTime - currentTime) / (1000 * 60 * 60)
             
-            if (hoursUntilDeadline >= 24) {
-                finalPrice = basePrice * 0.75 // 25% discount
+            if (hoursUntilDeadline >= PRICING.advanceBookingHours) {
+                finalPrice = basePrice * (1 - PRICING.advanceBookingDiscount)
             }
         }
         
         return finalPrice.toFixed(2)
     }
 
-    const handleRouteLoaded = useCallback((data: { polyline: string; distanceMeters: number; duration: number }) => {
+    const handleRouteLoaded = useCallback((data: { polyline?: string; distanceMeters?: number; duration?: number }) => {
         setRoute(data)
     }, [])
 
     const getGoogleMapsLink = () => {
         if (!job.pickup || !job.dropoff) return null
-        const origin = encodeURIComponent(job.pickup)
-        const destination = encodeURIComponent(job.dropoff)
-        return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`
+        const hq = encodeURIComponent(HQ_ADDRESS)
+        const pickup = encodeURIComponent(job.pickup)
+        const dropoff = encodeURIComponent(job.dropoff)
+        return `https://www.google.com/maps/dir/?api=1&origin=${hq}&destination=${dropoff}&waypoints=${pickup}&travelmode=driving`
     }
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -111,17 +131,6 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
         }
     }
 
-    // 7-node progress bar
-    const progressNodes = [
-        'Start',
-        'En Route', 
-        'Pickup',
-        'Loading',
-        'Driving',
-        'Dropoff',
-        'Complete'
-    ]
-
     // Manual status update functions
     const updateJobStatus = async (newStatus: string) => {
         try {
@@ -148,11 +157,14 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
 
             if (res.ok) {
                 console.log(`✅ Job status updated to: ${newStatus}`)
-                // Update local state instead of reloading page
-                // This keeps GPS tracking active
-                // Note: We'll need to update the job prop from parent component
-                // For now, just log the success
+                // Update local state by calling the callback
+                const updatedJob = { ...job, status: newStatus }
                 console.log(`🔄 Status updated locally to: ${newStatus}`)
+                
+                // Call the callback to update parent state
+                if (onJobUpdate) {
+                    onJobUpdate(updatedJob)
+                }
             } else {
                 console.error('Failed to update job status:', res.status)
             }
@@ -198,119 +210,101 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
         }
     }, [job.id, job.status])
 
-    // Calculate progress
-    useEffect(() => {
-        if (!driverLocation) return
+    // Calculate progress percentage and status
+    const getProgressInfo = () => {
+        // Check job status first - if completed, show 100% regardless of driver location
+        if (job.status === 'completed') {
+            return { percentage: 100, status: 'Job completed', color: 'purple' as const }
+        }
         
-        console.log('📍 Progress calculation debug:')
-        console.log('  Driver location:', driverLocation)
-        console.log('  Pickup coordinates:', { lat: pickupLat, lng: pickupLng })
-        console.log('  Dropoff coordinates:', { lat: dropoffLat, lng: dropoffLng })
-        console.log('  Current job status:', job.status)
-        
+        // If no driver location and job not completed, show waiting status
+        if (!driverLocation) {
+            return { percentage: 0, status: 'Waiting to start', color: 'blue' as const }
+        }
+
         if (pickupLat && pickupLng && dropoffLat && dropoffLng) {
             const distToPickup = haversine(driverLocation.lat, driverLocation.lng, pickupLat, pickupLng)
             const distToDropoff = haversine(driverLocation.lat, driverLocation.lng, dropoffLat, dropoffLng)
             
-            console.log('  Distance to pickup:', distToPickup, 'meters')
-            console.log('  Distance to dropoff:', distToDropoff, 'meters')
+            // Check if pickup is complete (either status is 'driving' or manual confirmation)
+            const pickupComplete = job.status === 'driving'
             
-            // Determine current progress based on GPS position ONLY
-            let completedNodes: number[] = [0] // Start is always complete
-            let currentStep = 0
-            
-            // Pure GPS-based logic - ignore job.status for visual progress
-            if (distToPickup < 100) {
-                // At pickup location
-                completedNodes = [0, 1, 2] // Start, En Route, Pickup complete
-                currentStep = 3 // Loading (regardless of job.status)
-            } else if (distToDropoff < 100) {
-                // At dropoff location
-                completedNodes = [0, 1, 2, 3, 4] // Start, En Route, Pickup, Loading, Driving complete
-                currentStep = 5 // Dropoff
-            } else if (distToPickup < distToDropoff) {
-                // Closer to pickup than dropoff - en route to pickup
-                completedNodes = [0] // Start complete
-                currentStep = 1 // En Route
-            } else {
-                // Closer to dropoff than pickup - driving to dropoff
-                completedNodes = [0, 1, 2, 3] // Start, En Route, Pickup, Loading complete
-                currentStep = 4 // Driving
+            // Auto-complete job only if pickup is complete AND within 50m of dropoff
+            if (pickupComplete && distToDropoff <= 50) {
+                return { percentage: 100, status: 'Job completed', color: 'purple' as const }
             }
             
-            console.log('  Final progress state:', { 
-                completed: completedNodes, 
-                currentStep,
-                distToPickup: Math.round(distToPickup),
-                distToDropoff: Math.round(distToDropoff)
-            })
-            
-            setCompleted(completedNodes)
-            setCurrent(currentStep)
-        } else {
-            console.log('  ❌ No pickup/dropoff coordinates available in job data')
-            setCompleted([0])
-            setCurrent(0)
+            // Determine progress based on GPS position and job status
+            if (distToPickup <= 50) {
+                // At pickup location (0-50m)
+                if (job.status === 'loading') {
+                    return { percentage: 40, status: 'Loading items', color: 'yellow' as const }
+                } else if (pickupComplete) {
+                    return { percentage: 50, status: 'Driving to dropoff', color: 'blue' as const }
+                } else {
+                    return { percentage: 30, status: 'At pickup location', color: 'green' as const }
+                }
+            } else if (distToPickup <= 100) {
+                // Approaching pickup (50-100m)
+                return { percentage: 25, status: 'Approaching pickup', color: 'blue' as const }
+            } else if (pickupComplete && distToDropoff <= 100) {
+                // At dropoff location (only if pickup is complete)
+                return { percentage: 95, status: 'At dropoff location', color: 'green' as const }
+            } else {
+                // Not at pickup or dropoff - determine direction
+                const hqToPickup = haversine(HQ_COORDINATES.lat, HQ_COORDINATES.lng, pickupLat, pickupLng)
+                const pickupToDropoff = haversine(pickupLat, pickupLng, dropoffLat, dropoffLng)
+                const hqToCurrent = haversine(HQ_COORDINATES.lat, HQ_COORDINATES.lng, driverLocation.lat, driverLocation.lng)
+                
+                if (pickupComplete) {
+                    // Pickup complete - driving to dropoff
+                    const distanceFromPickup = haversine(pickupLat, pickupLng, driverLocation.lat, driverLocation.lng)
+                    const progress = 50 + Math.floor((distanceFromPickup / pickupToDropoff) * 35)
+                    return { percentage: progress, status: 'Driving to dropoff', color: 'blue' as const }
+                } else if (distToDropoff < distToPickup) {
+                    // Closer to dropoff than pickup (but pickup not complete) - still en route to pickup
+                    const progress = Math.floor((hqToCurrent / hqToPickup) * 20)
+                    return { percentage: progress, status: 'En route to pickup', color: 'blue' as const }
+                } else {
+                    // Still en route to pickup
+                    const progress = Math.floor((hqToCurrent / hqToPickup) * 20)
+                    return { percentage: progress, status: 'En route to pickup', color: 'blue' as const }
+                }
+            }
         }
-    }, [driverLocation, job.id, job.status])
+        
+        // Fallback based on job status only
+        switch (job.status) {
+            case 'planned':
+                return { percentage: 0, status: 'Job planned', color: 'blue' as const }
+            case 'en_route':
+                return { percentage: 20, status: 'En route to pickup', color: 'blue' as const }
+            case 'loading':
+                return { percentage: 40, status: 'Loading items', color: 'yellow' as const }
+            case 'driving':
+                return { percentage: 60, status: 'Driving to dropoff', color: 'blue' as const }
+            case 'completed':
+                return { percentage: 100, status: 'Job completed', color: 'purple' as const }
+            default:
+                return { percentage: 0, status: 'Waiting to start', color: 'blue' as const }
+        }
+    }
+
+    const progressInfo = getProgressInfo()
+
+    // Check if user is staff or admin
+    const isStaffOrAdmin = user?.role === 'staff' || user?.role === 'admin'
 
     return (
         <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white">
-            <ProgressBar nodes={progressNodes} current={current} completed={completed} />
-            
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 justify-center">
-                {job.status === 'planned' && (
-                    <button 
-                        onClick={handleStartJob}
-                        className="bg-green-500 hover:bg-green-400 text-white font-semibold py-2 px-4 rounded"
-                    >
-                        🚗 Start Job
-                    </button>
-                )}
-                
-                {/* Show loading button when at pickup and not already loading/driving/completed */}
-                {driverLocation && pickupLat && pickupLng && 
-                 haversine(driverLocation.lat, driverLocation.lng, pickupLat, pickupLng) < 100 && 
-                 job.status && !['loading', 'driving', 'completed'].includes(job.status) && (
-                    <button 
-                        onClick={handleStartLoading}
-                        className="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-4 rounded"
-                    >
-                        📦 Start Loading
-                    </button>
-                )}
-                
-                {/* Show finish loading button only when status is loading */}
-                {job.status === 'loading' && (
-                    <button 
-                        onClick={handleFinishLoading}
-                        className="bg-orange-500 hover:bg-orange-400 text-white font-semibold py-2 px-4 rounded"
-                    >
-                        ✅ Finish Loading
-                    </button>
-                )}
-                
-                {/* Show completion button when at dropoff and not completed */}
-                {driverLocation && dropoffLat && dropoffLng && 
-                 haversine(driverLocation.lat, driverLocation.lng, dropoffLat, dropoffLng) < 100 && 
-                 job.status !== 'completed' && (
-                    <button 
-                        onClick={handleCompleteJob}
-                        className="bg-purple-500 hover:bg-purple-400 text-white font-semibold py-2 px-4 rounded"
-                    >
-                        🎉 Complete Job
-                    </button>
-                )}
-            </div>
-            
+            {/* Header at the top */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Job Overview</h1>
-                {!isEditing ? (
+                {isStaffOrAdmin && !isEditing ? (
                     <button onClick={() => setIsEditing(true)} className="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-4 rounded">
                         Edit
                     </button>
-                ) : (
+                ) : isStaffOrAdmin && isEditing ? (
                     <div className="flex gap-2">
                         <button onClick={handleSave} className="bg-green-500 hover:bg-green-400 text-white font-semibold py-2 px-4 rounded">
                             Save
@@ -319,8 +313,63 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
                             Cancel
                         </button>
                     </div>
-                )}
+                ) : null}
             </div>
+
+            {/* Progress Bar */}
+            <ProgressBar 
+                percentage={progressInfo.percentage} 
+                status={progressInfo.status} 
+                color={progressInfo.color} 
+            />
+            
+            {/* Action Buttons */}
+            {isStaffOrAdmin && (
+                <div className="flex flex-wrap gap-2 justify-center">
+                    {job.status === 'planned' && (
+                        <button 
+                            onClick={handleStartJob}
+                            className="bg-green-500 hover:bg-green-400 text-white font-semibold py-2 px-4 rounded"
+                        >
+                            🚗 Start Job
+                        </button>
+                    )}
+                    
+                    {/* Show loading button when at pickup and not already loading/driving/completed */}
+                    {driverLocation && pickupLat && pickupLng && 
+                     haversine(driverLocation.lat, driverLocation.lng, pickupLat, pickupLng) < 100 && 
+                     job.status && !['loading', 'driving', 'completed'].includes(job.status) && (
+                        <button 
+                            onClick={handleStartLoading}
+                            className="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-4 rounded"
+                        >
+                            📦 Start Loading
+                        </button>
+                    )}
+                    
+                    {/* Show finish loading button only when status is loading */}
+                    {job.status === 'loading' && (
+                        <button 
+                            onClick={handleFinishLoading}
+                            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold py-2 px-4 rounded"
+                        >
+                            ✅ Finish Loading
+                        </button>
+                    )}
+                    
+                    {/* Show completion button when at dropoff and not completed */}
+                    {driverLocation && dropoffLat && dropoffLng && 
+                     haversine(driverLocation.lat, driverLocation.lng, dropoffLat, dropoffLng) < 100 && 
+                     job.status !== 'completed' && (
+                        <button 
+                            onClick={handleCompleteJob}
+                            className="bg-purple-500 hover:bg-purple-400 text-white font-semibold py-2 px-4 rounded"
+                        >
+                            🎉 Complete Job
+                        </button>
+                    )}
+                </div>
+            )}
 
             {isEditing ? (
                 <div className="space-y-4">
@@ -349,9 +398,10 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
                         <li><strong>Dropoff:</strong> {job.dropoff}</li>
                     </ul>
                     <ul className="space-y-2 bg-white/5 p-4 mb-4 rounded-xl">
-                        <li><strong>Distance:</strong> {getDistanceMiles()} mi</li>
+                        <li><strong>Route:</strong> HQ → Pickup → Dropoff</li>
+                        <li><strong>Total Distance:</strong> {getDistanceMiles()} mi (from {HQ_ADDRESS})</li>
                         <li><strong>Deadline:</strong> {formatDeadline(job.deadline || '')}</li>
-                        <li><strong>Estimate:</strong> ${getPrice()}{job.deadline && (new Date(job.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60) >= 24 ? ' (25% advance booking discount applied)' : ''}</li>
+                        <li><strong>Estimate:</strong> ${getPrice()}{job.deadline && (new Date(job.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60) >= PRICING.advanceBookingHours ? ` (${PRICING.advanceBookingDiscount * 100}% advance booking discount applied)` : ''}</li>
                         <li><strong>Status:</strong> {job.status || 'No status'}</li>
                     </ul>
                 </span>
@@ -360,6 +410,7 @@ export default function SingleLegJobView({ job }: { job: ParsedJob }) {
             <JobMapClient
                 pickup={job.pickup}
                 dropoff={job.dropoff}
+                driverLocation={driverLocation}
                 onRouteLoaded={handleRouteLoaded}
             />
 

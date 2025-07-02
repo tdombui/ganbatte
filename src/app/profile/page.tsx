@@ -17,6 +17,7 @@ export default function ProfilePage() {
     company: '',
   })
   const [customerData, setCustomerData] = useState({
+    default_address: '',
     billing_address: '',
     notes: '',
   })
@@ -42,6 +43,7 @@ export default function ProfilePage() {
       })
       if (user.customer) {
         setCustomerData({
+          default_address: user.customer.default_address || '',
           billing_address: user.customer.billing_address || '',
           notes: user.customer.notes || '',
         })
@@ -62,20 +64,28 @@ export default function ProfilePage() {
     setMessage({ type: '', text: '' })
 
     try {
+      console.log('🔍 Saving profile data:', formData)
+      console.log('🔍 Saving customer data:', customerData)
+      
       // Update profile
       const { error: profileError } = await updateProfile(formData)
       
       if (profileError) {
+        console.error('❌ Profile update error:', profileError)
         throw profileError
       }
 
       // Update customer data if user is a customer
       if (user?.role === 'customer' && user.customer) {
+        console.log('🔍 Updating customer profile with:', customerData)
         const { error: customerError } = await updateCustomerProfile(customerData)
         
         if (customerError) {
+          console.error('❌ Customer update error:', customerError)
           throw customerError
         }
+        
+        console.log('✅ Customer profile updated successfully')
       }
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' })
@@ -211,15 +221,29 @@ export default function ProfilePage() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Default Address</label>
+                      <label className="block text-sm font-medium mb-2">Default Delivery Address</label>
                       <textarea
-                        value={customerData.billing_address}
+                        value={customerData.default_address}
+                        onChange={(e) => handleCustomerInputChange('default_address', e.target.value)}
+                        disabled={!isEditing}
+                        rows={3}
+                        className="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:border-lime-400 resize-none"
+                        placeholder="Enter your default delivery address (used when you say 'my shop', 'the shop', etc.)"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">This address will be used automatically when you mention &quot;my shop&quot; or &quot;the shop&quot; in chat</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Billing Address</label>
+                      <textarea
+                        value={customerData.billing_address || ''}
                         onChange={(e) => handleCustomerInputChange('billing_address', e.target.value)}
                         disabled={!isEditing}
                         rows={3}
                         className="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:border-lime-400 resize-none"
-                        placeholder="Enter your default delivery address"
+                        placeholder="Enter your billing address for invoices"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Address for billing and payment purposes</p>
                     </div>
                     
                     <div>
@@ -300,6 +324,7 @@ export default function ProfilePage() {
                             })
                             if (user.customer) {
                               setCustomerData({
+                                default_address: user.customer.default_address || '',
                                 billing_address: user.customer.billing_address || '',
                                 notes: user.customer.notes || '',
                               })

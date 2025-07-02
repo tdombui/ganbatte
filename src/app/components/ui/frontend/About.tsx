@@ -16,13 +16,13 @@ export default function About() {
                 <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10 font-sans">
 
                     <p className="text-gray-100 text-lg drop-shadow-lg">
-                        Ganbatte is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
+                        GanbattePM is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
                     </p>
                     <p className="text-gray-100 text-lg drop-shadow-lg">
                         We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers behind the wheel.                </p>
 
                     <p className="text-gray-100 text-lg drop-shadow-lg">
-                        Keep your parts moving and projects on track.
+                    We keep your critical operations in motion.
                     </p>
                     <p className="text-md text-gray-200 drop-shadow-lg"> <i>Ganbatte</i> (頑張って) means <i>do your best.</i> </p>
                     {/* <p className="text-sm text-gray-400">We always aim for 1st place. We drive to win.</p> */}

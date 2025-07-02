@@ -127,11 +127,11 @@ function AuthForm() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-8">
+    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-start pt-8 px-6 pb-8">
       {/* Auth Form */}
-      <div className="w-full max-w-md mx-auto">
+      <div className="w-full max-w-md mx-auto mt-8 sm:mt-16">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-4 sm:mb-8">
           <Image
             src="/ganbatte.png"
             alt="Ganbatte Logo"
@@ -143,7 +143,7 @@ function AuthForm() {
         </div>
 
         <div 
-          className="p-8 rounded-xl relative overflow-hidden"
+          className="p-6 sm:p-8 rounded-xl relative overflow-hidden"
           style={{
             background: `
               linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
@@ -165,7 +165,7 @@ function AuthForm() {
           </div>
 
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold text-center mb-8 drop-shadow-2xl">
+            <h2 className="text-3xl font-bold text-center mb-6 sm:mb-8 drop-shadow-2xl">
               {isSignIn ? 'Sign In' : 'Create Account'}
             </h2>
             

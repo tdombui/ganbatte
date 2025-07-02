@@ -80,7 +80,7 @@ export default function StaffNavbar() {
                         priority
                     />
                     <h1 className="text-[2rem] font-bold font-sans tracking-tight lg:text-[2rem]">
-                        Ganbatte
+                        GanbattePM
                     </h1>
                 </Link>
                 

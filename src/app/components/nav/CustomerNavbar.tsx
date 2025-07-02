@@ -5,11 +5,14 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react'
 import { useAuthContext } from '../../providers'
+import { createClient } from '../../../lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function CustomerNavbar() {
     const { user, logout, isAuthenticated, loading } = useAuthContext()
     const [open, setOpen] = useState(false)
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+    const router = useRouter()
 
     console.log('🔍 CustomerNavbar: Rendering with:', { 
         user: user?.id, 
@@ -57,10 +60,39 @@ export default function CustomerNavbar() {
             
             console.log('🔍 CustomerNavbar: Logout successful, redirecting...')
             // Force page reload to clear any cached state
-            window.location.href = '/'
+            router.push('/')
         } catch (error) {
             console.error('🔍 CustomerNavbar: Logout error:', error)
             alert('Failed to sign out. Please try again.')
+        }
+    }
+
+    // Function to verify session before navigation
+    const verifySessionAndNavigate = async (targetPath: string) => {
+        try {
+            // If not authenticated, redirect to auth
+            if (!isAuthenticated) {
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Verify session is valid on server-side
+            const supabase = createClient()
+            const { data: { session }, error } = await supabase.auth.getSession()
+            
+            if (error || !session) {
+                console.log('🔍 Session verification failed, redirecting to auth')
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Session is valid, navigate to target
+            console.log('🔍 Session verified, navigating to:', targetPath)
+            router.push(targetPath)
+        } catch (error) {
+            console.error('Session verification error:', error)
+            // Fallback to auth page
+            router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
         }
     }
 
@@ -79,7 +111,7 @@ export default function CustomerNavbar() {
                         priority
                     />
                     <h1 className="text-[2rem] font-bold font-sans tracking-tight lg:text-[2rem]">
-                        Ganbatte
+                        GanbattePM
                     </h1>
                 </Link>
                 
@@ -106,12 +138,12 @@ export default function CustomerNavbar() {
                 <div className="flex items-center gap-2">
                     {/* Desktop buttons - hidden on mobile */}
                     <div className="hidden lg:flex items-center gap-2">
-                        <Link
-                            href="/chat"
+                        <button
+                            onClick={() => verifySessionAndNavigate("/chat")}
                             className="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg overflow-hidden transition-all duration-300 bg-lime-400 text-black hover:bg-lime-300 px-4 py-2.5 font-medium text-sm shadow-lg"
                         >
                             <span className="relative z-10 font-bold flex">Request Delivery</span>
-                        </Link>
+                        </button>
                         
                         {isAuthenticated && (
                             <Link
@@ -264,13 +296,15 @@ export default function CustomerNavbar() {
                                             Sign in
                                         </Link>
                                     )}
-                                    <Link
-                                        href="/chat"
-                                        onClick={() => setOpen(false)}
-                                        className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors"
+                                    <button
+                                        onClick={() => {
+                                            setOpen(false)
+                                            verifySessionAndNavigate("/chat")
+                                        }}
+                                        className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors w-full text-left"
                                     >
                                         Request Delivery
-                                    </Link>
+                                    </button>
                                     {isAuthenticated && (
                                         <Link
                                             href="/jobs"

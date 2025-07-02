@@ -54,6 +54,7 @@ export interface Database {
         Row: {
           id: string
           billing_address: string | null
+          default_address: string | null
           preferred_payment_method: string | null
           credit_limit: number | null
           is_active: boolean
@@ -64,6 +65,7 @@ export interface Database {
         Insert: {
           id: string
           billing_address?: string | null
+          default_address?: string | null
           preferred_payment_method?: string | null
           credit_limit?: number | null
           is_active?: boolean
@@ -74,6 +76,7 @@ export interface Database {
         Update: {
           id?: string
           billing_address?: string | null
+          default_address?: string | null
           preferred_payment_method?: string | null
           credit_limit?: number | null
           is_active?: boolean

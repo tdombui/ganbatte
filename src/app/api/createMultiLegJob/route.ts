@@ -57,6 +57,43 @@ export async function POST(req: NextRequest) {
         const { parts, deadline, legs } = body
 
         const geocodeAddress = async (address: string) => {
+            // Check if address is already coordinates (decimal degrees format: lat, lng)
+            const decimalCoordinatePattern = /^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/
+            const decimalMatch = address.trim().match(decimalCoordinatePattern)
+            
+            if (decimalMatch) {
+                const lat = parseFloat(decimalMatch[1])
+                const lng = parseFloat(decimalMatch[2])
+                console.log('✅ Decimal coordinates detected, skipping geocoding:', { lat, lng })
+                return { lat, lng }
+            }
+
+            // Check if address is coordinates (DMS format: degrees°minutes'seconds"N/S longitude°minutes'seconds"E/W)
+            const dmsCoordinatePattern = /^(\d+)°(\d+)'(\d+\.?\d*)"([NS])\s+(\d+)°(\d+)'(\d+\.?\d*)"([EW])$/i
+            const dmsMatch = address.trim().match(dmsCoordinatePattern)
+            
+            if (dmsMatch) {
+                // Convert DMS to decimal degrees
+                const latDegrees = parseInt(dmsMatch[1])
+                const latMinutes = parseInt(dmsMatch[2])
+                const latSeconds = parseFloat(dmsMatch[3])
+                const latDirection = dmsMatch[4].toUpperCase()
+                
+                const lngDegrees = parseInt(dmsMatch[5])
+                const lngMinutes = parseInt(dmsMatch[6])
+                const lngSeconds = parseFloat(dmsMatch[7])
+                const lngDirection = dmsMatch[8].toUpperCase()
+                
+                let lat = latDegrees + (latMinutes / 60) + (latSeconds / 3600)
+                let lng = lngDegrees + (lngMinutes / 60) + (lngSeconds / 3600)
+                
+                if (latDirection === 'S') lat = -lat
+                if (lngDirection === 'W') lng = -lng
+                
+                console.log('✅ DMS coordinates detected, converted to decimal:', { lat, lng })
+                return { lat, lng }
+            }
+            
             // California center coordinates for biasing
             const californiaCenter = '36.7783,-119.4179'
             const res = await fetch(

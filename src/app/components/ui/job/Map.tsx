@@ -9,10 +9,16 @@ export interface MapProps {
         distanceMeters?: number
         duration?: number
     }
+    driverLocation?: {
+        lat: number
+        lng: number
+    } | null
 }
 
-export default function Map({ route }: MapProps) {
+export default function Map({ route, driverLocation }: MapProps) {
     const mapRef = useRef<HTMLDivElement>(null)
+    const mapInstanceRef = useRef<google.maps.Map | null>(null)
+    const driverMarkerRef = useRef<google.maps.Marker | null>(null)
 
     useEffect(() => {
         if (!window.google || !mapRef.current) return
@@ -21,6 +27,7 @@ export default function Map({ route }: MapProps) {
             zoom: 10,
             center: { lat: 33.6846, lng: -117.8265 },
         })
+        mapInstanceRef.current = map
 
         // Defensive check for polyline
         if (
@@ -48,6 +55,35 @@ export default function Map({ route }: MapProps) {
             console.warn('⚠️ No valid polyline available to display route.')
         }
     }, [route])
+
+    // Handle driver location marker
+    useEffect(() => {
+        if (!window.google || !mapInstanceRef.current || !driverLocation) return
+
+        const map = mapInstanceRef.current
+
+        // Create or update driver marker
+        if (driverMarkerRef.current) {
+            // Update existing marker position
+            driverMarkerRef.current.setPosition(driverLocation)
+        } else {
+            // Create new driver marker
+            driverMarkerRef.current = new window.google.maps.Marker({
+                position: driverLocation,
+                map: map,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="10" cy="10" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                        </svg>
+                    `),
+                    scaledSize: new window.google.maps.Size(20, 20),
+                    anchor: new window.google.maps.Point(10, 10)
+                },
+                title: 'Driver Location'
+            })
+        }
+    }, [driverLocation])
 
     return <div ref={mapRef} className="w-full h-[400px] rounded-xl bg-gray-300" />
 }

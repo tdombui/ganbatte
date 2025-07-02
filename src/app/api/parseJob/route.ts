@@ -3,6 +3,7 @@ import { ParsedJob } from '@/types/job'
 import { openai } from '@/lib/openai'
 import { validateAddress } from '@/lib/validateAddress'
 import { normalizeDeadline } from '@/lib/normalizeDeadline'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
     try {
@@ -10,6 +11,27 @@ export async function POST(req: Request) {
         const { text, history, overrideField } = await req.json()
 
         console.log('🔍 ParseJob request:', { text, overrideField, historyLength: history?.length || 0 })
+
+        // Get customer's default address for context
+        let customerDefaultAddress: string | null = null
+        try {
+            const supabase = await createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (user) {
+                const { data: customer } = await supabase
+                    .from('customers')
+                    .select('default_address')
+                    .eq('id', user.id)
+                    .single()
+                
+                customerDefaultAddress = customer?.default_address || null
+                console.log('🔍 Customer default address:', customerDefaultAddress)
+            }
+        } catch (error) {
+            console.log('🔍 Could not fetch customer default address:', error)
+            // Continue without default address - don't fail the entire request
+        }
 
         // If we're clarifying a specific field, we need to preserve existing job data
         const existingJobData: Partial<ParsedJob> = {}
@@ -44,6 +66,10 @@ export async function POST(req: Request) {
         }
 
         console.log('🔍 ParseJob: Building prompt...')
+        const defaultAddressContext = customerDefaultAddress 
+            ? `\nCUSTOMER CONTEXT: The customer has set their default address as: "${customerDefaultAddress}". When they mention "my shop", "the shop", "my place", "here", or similar references, use this default address.`
+            : ''
+
         const prompt = `
 You're an assistant for a parts delivery service called Ganbatte. When a customer sends a message, your job is to extract these fields and return them as JSON only — no backticks, no markdown, no explanations.
 
@@ -51,15 +77,19 @@ Here is the conversation history:
 ${history}
 
 Most recent message:
-${text}
+${text}${defaultAddressContext}
 
 ${overrideField ? `IMPORTANT: The user is clarifying the ${overrideField} field. Please extract ONLY the ${overrideField} from their message. Keep other fields as they were previously discussed.` : ''}
 
 EXTRACTION GUIDELINES:
 - parts: Extract any items, parts, or things being delivered (e.g., "wheels", "engine parts", "documents")
-- pickup: Extract the pickup address or location
-- dropoff: Extract the delivery address or location  
+- pickup: Extract the pickup address or location (can be coordinates like "40.7128, -74.0060" or street addresses)
+- dropoff: Extract the delivery address or location (can be coordinates like "40.7128, -74.0060" or street addresses)
 - deadline: Extract ANY time reference, including natural language like "next tuesday", "tomorrow", "by 5pm", "asap", "urgent", etc. Keep the original text as-is.
+
+${customerDefaultAddress ? `ADDRESS RESOLUTION: If the customer mentions "my shop", "the shop", "my place", "here", or similar references, use their default address: "${customerDefaultAddress}"` : ''}
+
+COORDINATE HANDLING: If the customer provides GPS coordinates in any format (e.g., "40.7128, -74.0060", "34.0522, -118.2437", "33°11'58.5\"N 117°22'27.6\"W"), extract them exactly as provided. Do not try to convert coordinates to addresses.
 
 Return a JSON object with:
 {
@@ -75,6 +105,11 @@ Examples of deadline extraction:
 - "as soon as possible" → deadline: "as soon as possible"
 - "by Friday" → deadline: "by Friday"
 - "urgent delivery" → deadline: "urgent delivery"
+
+Examples of coordinate extraction:
+- "pickup at 40.7128, -74.0060" → pickup: "40.7128, -74.0060"
+- "deliver to 34.0522, -118.2437" → dropoff: "34.0522, -118.2437"
+- "pickup from 33°11'58.5\"N 117°22'27.6\"W" → pickup: "33°11'58.5\"N 117°22'27.6\"W"
 `
 
         console.log('🔍 ParseJob: Calling OpenAI...')

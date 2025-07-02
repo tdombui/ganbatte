@@ -123,13 +123,13 @@ export default function MultiLegForm() {
         <>
             <Toast message={toast} onClose={() => setToast('')} />
             {/* Form Header with Toggle Button - Same position as Multi Leg button */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4 font-sans">
                 <div className="flex items-center gap-3">
-                    <span className="text-emerald-400 text-sm bg-emerald-900/20 px-3 py-1 rounded-full">Multi-Trip Job Builder</span>
+                    <span className="text-white text-lg font-bold ">Multi-Trip Job Builder</span>
                 </div>
 
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4 font-sans">
                 {/* Parts Section */}
                 <div className="bg-neutral-900/50 rounded-lg p-4 border border-neutral-600">
                     <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -148,7 +148,7 @@ export default function MultiLegForm() {
                         />
                         <button
                             onClick={handleAddPart}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 transition-colors font-medium text-base"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg disabled:opacity-50 transition-colors font-medium text-base"
                             disabled={!partInput.trim() || loading}
                             type="button"
                         >
@@ -189,27 +189,24 @@ export default function MultiLegForm() {
                                 >×</button>
                                 <h3 className="font-semibold text-emerald-300 mb-3 text-lg border-b border-neutral-600 pb-2 pr-8">{leg.part}</h3>
                                 <div className="space-y-4">
-                                    <div className="bg-neutral-700/50 rounded-lg p-3">
-                                        <AddressInput
-                                            label="Pickup Location"
-                                            value={leg.pickup}
-                                            onChange={val => updateLeg(idx, 'pickup', val)}
-                                        />
-                                        {errors[`pickup${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`pickup${idx}`]}</div>}
-                                    </div>
-                                    <div className="bg-neutral-700/50 rounded-lg p-3">
-                                        <AddressInput
-                                            label="Dropoff Location"
-                                            value={leg.dropoff}
-                                            onChange={val => updateLeg(idx, 'dropoff', val)}
-                                        />
-                                        {errors[`dropoff${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`dropoff${idx}`]}</div>}
-                                    </div>
+                                    <AddressInput
+                                        label="Pickup Location"
+                                        value={leg.pickup}
+                                        onChange={val => updateLeg(idx, 'pickup', val)}
+                                    />
+                                    {errors[`pickup${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`pickup${idx}`]}</div>}
+                                    
+                                    <AddressInput
+                                        label="Dropoff Location"
+                                        value={leg.dropoff}
+                                        onChange={val => updateLeg(idx, 'dropoff', val)}
+                                    />
+                                    {errors[`dropoff${idx}`] && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors[`dropoff${idx}`]}</div>}
                                 </div>
                             </div>
                         ))}
                         {legs.length === 0 && (
-                            <div className="text-center py-6 text-neutral-400 border-2 border-dashed border-neutral-600 rounded-lg">
+                            <div className="text-center px-3 py-2 text-neutral-400 border-2 border-dashed border-neutral-600 rounded-lg">
                                 <p>Add parts above to create delivery trips</p>
                             </div>
                         )}
@@ -222,10 +219,8 @@ export default function MultiLegForm() {
                         <span className="text-emerald-400">⏰</span>
                         Deadline
                     </h2>
-                    <div className="bg-neutral-700/50 rounded-lg p-3">
-                        <DeadlinePicker value={deadline} onChange={setDeadline} />
-                        {errors.deadline && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors.deadline}</div>}
-                    </div>
+                    <DeadlinePicker value={deadline} onChange={setDeadline} />
+                    {errors.deadline && <div className="text-red-400 text-sm mt-2 bg-red-900/20 px-3 py-2 rounded border border-red-800">{errors.deadline}</div>}
                 </div>
 
                 {/* Submit Button */}

@@ -1,30 +1,31 @@
 import React from 'react'
 
 interface ProgressBarProps {
-  nodes: string[]
-  current: number // index of current node
-  completed?: number[] // indices of completed nodes
+  percentage: number // 0-100
+  status: string // e.g., "En Route", "At Pickup", "Loading", etc.
+  color?: 'blue' | 'green' | 'yellow' | 'purple'
 }
 
-export default function ProgressBar({ nodes, current, completed = [] }: ProgressBarProps) {
+export default function ProgressBar({ percentage, status, color = 'blue' }: ProgressBarProps) {
+  const colorClasses = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500', 
+    yellow: 'bg-yellow-500',
+    purple: 'bg-purple-500'
+  }
+
   return (
-    <div className="flex items-center w-full my-4 overflow-x-auto">
-      {nodes.map((label, idx) => (
-        <React.Fragment key={idx}>
-          <div className="flex flex-col items-center min-w-0 flex-shrink-0">
-            <div
-              className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-xs
-                ${completed.includes(idx) ? 'bg-green-500 text-white' : idx === current ? 'bg-yellow-400 text-black' : 'bg-gray-400 text-white'}`}
-            >
-              {idx + 1}
-            </div>
-            <div className="text-xs mt-1 text-center w-12 truncate text-gray-300">{label}</div>
-          </div>
-          {idx < nodes.length - 1 && (
-            <div className={`flex-1 h-1 mx-1 min-w-2 ${completed.includes(idx) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-          )}
-        </React.Fragment>
-      ))}
+    <div className="w-full my-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-medium text-gray-300">{status}</span>
+        <span className="text-sm font-medium text-gray-300">{percentage}%</span>
+      </div>
+      <div className="w-full bg-gray-700 rounded-full h-3">
+        <div 
+          className={`${colorClasses[color]} h-3 rounded-full transition-all duration-500 ease-out`}
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
     </div>
   )
 } 

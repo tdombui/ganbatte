@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { ParsedJob } from '@/types/job'
-import { SendHorizonal, LogOut, Settings } from 'lucide-react'
+import { SendHorizonal } from 'lucide-react'
 import { formatDeadline } from '@/lib/formatDeadline'
 import MultiLegForm from '@/app/components/ui/job/MultiLegForm'
 import { useAuthContext } from '../providers'
@@ -62,7 +62,7 @@ async function getAuthHeaders() {
 }
 
 export default function ChatPage() {
-    const { user, loading: authLoading, isAuthenticated, logout } = useAuthContext()
+    const { user, loading: authLoading, isAuthenticated } = useAuthContext()
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat')
     const [messages, setMessages] = useState<string[]>([])
@@ -73,28 +73,14 @@ export default function ChatPage() {
     const [parsedJob, setParsedJob] = useState<ParsedJob | null>(null)
     const [savedJob, setSavedJob] = useState<{ id: string } | null>(null)
     const [lastQuestion, setLastQuestion] = useState<'pickup' | 'dropoff' | 'deadline' | null>(null)
-    const [showSettingsDropdown, setShowSettingsDropdown] = useState(false)
     const chatEndRef = useRef<HTMLDivElement>(null)
-    const settingsRef = useRef<HTMLDivElement>(null)
     const router = useRouter()
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    // Close settings dropdown when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-                setShowSettingsDropdown(false)
-            }
-        }
 
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [])
 
     // Show auth modal if user is not authenticated
     useEffect(() => {
@@ -141,13 +127,7 @@ export default function ChatPage() {
         return () => clearInterval(interval)
     }, [isAuthenticated])
 
-    const handleSignOut = async () => {
-        await logout()
-        setMessages([])
-        setParsedJob(null)
-        setSavedJob(null)
-        setShowSettingsDropdown(false)
-    }
+
 
     async function handleSend(message: string) {
         if (!isAuthenticated) {
@@ -457,51 +437,27 @@ export default function ChatPage() {
     // Show loading state while checking authentication
     if (authLoading) {
         return (
-            <>
+            <div className="min-h-screen bg-black">
                 <UnifiedNavbar />
-                <div className="max-w-4xl mx-auto py-8 pt-24">
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-white">Loading...</div>
+                <main className="pt-20">
+                    <div className="max-w-4xl mx-auto py-8">
+                        <div className="flex items-center justify-center h-64">
+                            <div className="text-white">Loading...</div>
+                        </div>
                     </div>
-                </div>
-            </>
+                </main>
+            </div>
         )
     }
 
     return (
-        <>
+        <div className="min-h-screen bg-black">
             <UnifiedNavbar />
-            <div className="max-w-4xl mx-auto py-4 sm:py-8 px-4 sm:px-0 pt-24">
+            <main className="pt-20">
+                <div className="max-w-4xl mx-auto py-4 sm:py-4 px-4 sm:px-0">
                 {/* Header with Navigation */}
-                <div className="mb-6 sm:mb-8 px-4 sm:px-0">
-                    {/* Title and settings on same line */}
-                    <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <header className="text-lg sm:text-2xl lg:text-3xl font-bold font-sans">Ganbatte Payload Movers</header>
-                        
-                        {/* Settings Dropdown */}
-                        {isAuthenticated && (
-                            <div className="relative" ref={settingsRef}>
-                                <button
-                                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                                    className="p-2 text-neutral-400 hover:text-white transition-colors"
-                                >
-                                    <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-                                </button>
-                                
-                                {showSettingsDropdown && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-lg border border-neutral-700 z-10">
-                                        <button
-                                            onClick={handleSignOut}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-red-400 hover:bg-neutral-700 transition-colors"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            Sign Out
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                <div className="mb-6 sm:mb-4 px-4 sm:px-0">
+
                     
                     {/* Tag and button on one line */}
                     <div className="flex justify-between items-center">
@@ -519,7 +475,7 @@ export default function ChatPage() {
                 </div>
 
                 {viewMode === 'chat' && (
-                    <>
+                    <div>
                         {/* Chat Interface */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                             {/* Main Chat Area */}
@@ -544,12 +500,12 @@ export default function ChatPage() {
                                                     {renderJobLink(content)}
                                                 </div>
                                                 
-                                                {/* Message tail */}
-                                                <div className={`w-3 h-3 ${
+                                                {/* Message tail - iOS style with less rounded corners */}
+                                                <div className={`w-2 h-2 ${
                                                     isUser 
-                                                        ? 'ml-auto bg-blue-500 rounded-br-full' 
-                                                        : 'mr-auto bg-gray-600 rounded-bl-full'
-                                                }`} style={{ marginTop: '-12px' }}></div>
+                                                        ? 'ml-auto bg-blue-500 rounded-br-sm' 
+                                                        : 'mr-auto bg-gray-600 rounded-bl-sm'
+                                                }`} style={{ marginTop: '-8px' }}></div>
                                             </div>
                                         )
                                     })}
@@ -575,7 +531,7 @@ export default function ChatPage() {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div className="w-3 h-3 mr-auto bg-gray-600 rounded-bl-full" style={{ marginTop: '-12px' }}></div>
+                                            <div className="w-2 h-2 mr-auto bg-gray-600 rounded-bl-sm" style={{ marginTop: '-8px' }}></div>
                                         </div>
                                     )}
 
@@ -586,7 +542,7 @@ export default function ChatPage() {
                                 </div>
 
                                 {/* Thinking indicator - always reserves space */}
-                                <div className="h-6 mb-1 flex items-center">
+                                <div className="h-3 mb-1 flex items-center">
                                     {isLoading && (
                                         <div className="flex items-center gap-2 text-emerald-400 text-sm">
                                             <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
@@ -759,7 +715,7 @@ export default function ChatPage() {
                                 </div>
                             </div>
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {viewMode === 'form' && (
@@ -775,6 +731,7 @@ export default function ChatPage() {
                 onClose={() => setShowAuthModal(false)}
                 mode="login"
             />
-        </>
+        </main>
+        </div>
     )
 }

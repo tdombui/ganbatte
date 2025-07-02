@@ -130,21 +130,33 @@ export async function updateProfile(profileData: { full_name?: string; phone?: s
   }
 }
 
-export async function updateCustomerProfile(customerData: { billing_address?: string; notes?: string }) {
+export async function updateCustomerProfile(customerData: { billing_address?: string; default_address?: string; notes?: string }) {
   try {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      console.error('❌ updateCustomerProfile: No authenticated user')
       return { error: new Error('No authenticated user') }
     }
 
-    const { error } = await supabase
+    console.log('🔍 updateCustomerProfile: Updating customer data for user:', user.id)
+    console.log('🔍 updateCustomerProfile: Data to update:', customerData)
+
+    const { data, error } = await supabase
       .from('customers')
       .update(customerData)
       .eq('id', user.id)
+      .select()
 
-    return { error }
+    if (error) {
+      console.error('❌ updateCustomerProfile: Supabase error:', error)
+      return { error }
+    }
+
+    console.log('✅ updateCustomerProfile: Successfully updated customer data:', data)
+    return { data, error: null }
   } catch (error) {
+    console.error('❌ updateCustomerProfile: Unexpected error:', error)
     return { error: error as Error }
   }
 }

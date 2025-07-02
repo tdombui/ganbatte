@@ -155,6 +155,52 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
         }
     }
 
+    const handleConfirmPickup = async () => {
+        console.log('Confirming pickup complete for job:', job.id)
+        
+        try {
+            // Get the current session token
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
+
+            if (!token) {
+                console.error('No session token available')
+                alert('No session token available. Please refresh the page and try again.')
+                return
+            }
+
+            console.log('Sending confirm pickup request')
+
+            const res = await fetch('/api/updateJob', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    jobId: job.id,
+                    updates: { status: 'driving' },
+                }),
+            })
+
+            console.log('Confirm pickup response status:', res.status)
+
+            if (res.ok) {
+                const responseData = await res.json()
+                console.log('Pickup confirmed successfully:', responseData)
+                setJob(prev => ({ ...prev, status: 'driving' }))
+            } else {
+                const errorData = await res.json().catch(() => ({ error: 'Failed to parse error response' }))
+                console.error('Failed to confirm pickup:', errorData)
+                alert('Failed to confirm pickup: ' + (errorData.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('Unexpected error confirming pickup:', error)
+            alert('Unexpected error confirming pickup. Please try again.')
+        }
+    }
+
     const handleStartJob = async () => {
         console.log('Starting job:', job.id)
         
@@ -251,7 +297,7 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
         if (isMultiLegJob(job)) {
             return <MultiLegJobView job={job} />
         }
-        return <SingleLegJobView job={job} />
+        return <SingleLegJobView job={job} onJobUpdate={(updatedJob) => setJob(updatedJob)} />
     }
 
     // Driver-side GPS tracking
@@ -351,6 +397,7 @@ export default function StaffJobView({ job: initialJob, isStaff }: { job: JobTyp
                     onStatusChange={handleStatusChange}
                     onFileUpload={handleFileUpload}
                     onDeletePhoto={handleDeletePhoto}
+                    onConfirmPickup={handleConfirmPickup}
                 />
             </div>
         </>

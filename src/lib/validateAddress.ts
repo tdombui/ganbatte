@@ -1,4 +1,19 @@
 export async function validateAddress(address: string): Promise<{ valid: boolean, resolvedAddress?: string }> {
+    // Check if address is coordinates (decimal degrees format: lat, lng)
+    const decimalCoordinatePattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/
+    if (decimalCoordinatePattern.test(address.trim())) {
+        console.log('✅ Address validation passed - decimal coordinates detected:', address)
+        return { valid: true, resolvedAddress: address.trim() }
+    }
+
+    // Check if address is coordinates (DMS format: degrees°minutes'seconds"N/S longitude°minutes'seconds"E/W)
+    const dmsCoordinatePattern = /^(\d+)°(\d+)'(\d+\.?\d*)"([NS])\s+(\d+)°(\d+)'(\d+\.?\d*)"([EW])$/i
+    const dmsMatch = address.trim().match(dmsCoordinatePattern)
+    if (dmsMatch) {
+        console.log('✅ Address validation passed - DMS coordinates detected:', address)
+        return { valid: true, resolvedAddress: address.trim() }
+    }
+
     // Check if address is too vague
     const isVague = !address ||
         address.trim().length < 5 || // Reduced from 8 to 5

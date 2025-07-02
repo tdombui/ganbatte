@@ -2,15 +2,19 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Menu, X, User, LogOut, ChevronDown, RefreshCw } from 'lucide-react'
 import { useAuthContext } from '../../providers'
+import { createClient } from '../../../lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function UnifiedNavbar() {
     const { user, logout, isAuthenticated, loading, isCustomer, isAdmin, refreshUser } = useAuthContext()
     const [open, setOpen] = useState(false)
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const router = useRouter()
 
     const toggleMenu = () => setOpen(!open)
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen)
@@ -50,6 +54,31 @@ export default function UnifiedNavbar() {
         }
     }, [loading, refreshUser])
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setProfileDropdownOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    // Close mobile menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element
+            if (!target.closest('.mobile-menu-container')) {
+                setOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
     const handleLogout = async () => {
         try {
             setProfileDropdownOpen(false)
@@ -64,7 +93,7 @@ export default function UnifiedNavbar() {
             }
             
             // Force page reload to clear any cached state
-            window.location.href = '/'
+            router.push('/')
         } catch (error) {
             console.error('UnifiedNavbar: Logout error:', error)
             setError('Failed to sign out. Please try again.')
@@ -73,18 +102,55 @@ export default function UnifiedNavbar() {
 
     const handleRefreshAuth = async () => {
         try {
-            setError(null)
-            await refreshUser()
-        } catch (err) {
-            console.error('Failed to refresh auth:', err)
-            setError('Failed to refresh authentication. Please reload the page.')
+            const supabase = createClient()
+            const { data: { session }, error } = await supabase.auth.refreshSession()
+            
+            if (error) {
+                console.error('Auth refresh error:', error)
+                router.push('/auth')
+            } else if (session) {
+                console.log('Auth refreshed successfully')
+                window.location.reload()
+            }
+        } catch (error) {
+            console.error('Auth refresh error:', error)
+            router.push('/auth')
+        }
+    }
+
+    // Function to verify session before navigation
+    const verifySessionAndNavigate = async (targetPath: string) => {
+        try {
+            // If not authenticated, redirect to auth
+            if (!isAuthenticated) {
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Verify session is valid on server-side
+            const supabase = createClient()
+            const { data: { session }, error } = await supabase.auth.getSession()
+            
+            if (error || !session) {
+                console.log('🔍 Session verification failed, redirecting to auth')
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Session is valid, navigate to target
+            console.log('🔍 Session verified, navigating to:', targetPath)
+            router.push(targetPath)
+        } catch (error) {
+            console.error('Session verification error:', error)
+            // Fallback to auth page
+            router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
         }
     }
 
     // Show error state
     if (error) {
         return (
-            <nav className="fixed top-4 left-4 right-8 z-50">
+            <nav className="fixed top-4 left-4 right-4 z-50">
                 <div className="relative flex h-14 w-full items-center justify-between rounded-lg border border-red-500/20 px-2 py-2 transition-all duration-300 bg-red-900/20 backdrop-blur-sm shadow-[0px_5px_18px_rgba(0,0,0,0.3)]">
                     <div className="flex items-center gap-2">
                         <span className="text-red-400 text-sm">{error}</span>
@@ -112,7 +178,7 @@ export default function UnifiedNavbar() {
     // Show loading state to prevent hydration mismatch
     if (loading) {
         return (
-            <nav className="fixed top-4 left-4 right-8 z-50">
+            <nav className="fixed top-4 left-4 right-4 z-50">
                 <div className="relative flex h-14 w-full items-center justify-between rounded-lg border border-white/5 px-2 py-2 transition-all duration-300 bg-black/85 backdrop-blur-sm shadow-[0px_5px_18px_rgba(0,0,0,0.3)]">
                     {/* Logo placeholder */}
                     <div className="relative flex w-fit items-center gap-2 overflow-hidden">
@@ -130,7 +196,7 @@ export default function UnifiedNavbar() {
     }
 
     return (
-        <nav className="fixed top-4 left-4 right-8 z-50">
+        <nav className="fixed top-4 left-4 right-4 z-50">
             <div className="relative flex h-14 w-full items-center justify-between rounded-lg border border-white/5 px-2 py-2 transition-all duration-300 bg-black/85 backdrop-blur-sm shadow-[0px_5px_18px_rgba(0,0,0,0.3)]">
                 {/* Logo */}
                 <Link href="/" className="relative flex w-fit items-center gap-2 overflow-hidden">
@@ -144,7 +210,7 @@ export default function UnifiedNavbar() {
                         priority
                     />
                     <h1 className="text-[2rem] font-bold font-sans tracking-tight lg:text-[2rem]">
-                        Ganbatte
+                        GanbattePM
                     </h1>
                 </Link>
                 
@@ -178,12 +244,12 @@ export default function UnifiedNavbar() {
                     <div className="hidden lg:flex items-center gap-2">
                         {/* Role-based action buttons */}
                         {isAuthenticated && isCustomer && (
-                            <Link
-                                href="/chat"
+                            <button
+                                onClick={() => verifySessionAndNavigate("/chat")}
                                 className="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg overflow-hidden transition-all duration-300 bg-lime-400 text-black hover:bg-lime-300 px-4 py-2.5 font-medium text-sm shadow-lg"
                             >
                                 <span className="relative z-10 font-bold flex">Request Delivery</span>
-                            </Link>
+                            </button>
                         )}
                         
                         {/* Only show green button for admin, not staff */}
@@ -353,13 +419,15 @@ export default function UnifiedNavbar() {
                                     
                                     {/* Role-based action buttons for mobile */}
                                     {isAuthenticated && isCustomer && (
-                                        <Link
-                                            href="/chat"
-                                            onClick={() => setOpen(false)}
-                                            className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors"
+                                        <button
+                                            onClick={() => {
+                                                setOpen(false)
+                                                verifySessionAndNavigate("/chat")
+                                            }}
+                                            className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors w-full text-left"
                                         >
                                             Request Delivery
-                                        </Link>
+                                        </button>
                                     )}
                                     
                                     {isAuthenticated && isAdmin && (

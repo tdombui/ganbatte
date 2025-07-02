@@ -5,11 +5,14 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { Menu, X, Settings, Users, User, LogOut, ChevronDown } from 'lucide-react'
 import { useAuthContext } from '../../providers'
+import { createClient } from '../../../lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
     const { user, loading, logout, isAuthenticated } = useAuthContext()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const router = useRouter()
     
     // Derive staff/admin status from user role
     const isStaffUser = user?.role === 'staff' || user?.role === 'admin'
@@ -22,6 +25,35 @@ export default function Navbar() {
         await logout()
         setIsProfileOpen(false)
         setIsMenuOpen(false)
+    }
+
+    // Function to verify session before navigation
+    const verifySessionAndNavigate = async (targetPath: string) => {
+        try {
+            // If not authenticated, redirect to auth
+            if (!isAuthenticated) {
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Verify session is valid on server-side
+            const supabase = createClient()
+            const { data: { session }, error } = await supabase.auth.getSession()
+            
+            if (error || !session) {
+                console.log('🔍 Session verification failed, redirecting to auth')
+                router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+                return
+            }
+
+            // Session is valid, navigate to target
+            console.log('🔍 Session verified, navigating to:', targetPath)
+            router.push(targetPath)
+        } catch (error) {
+            console.error('Session verification error:', error)
+            // Fallback to auth page
+            router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+        }
     }
 
     return (
@@ -39,7 +71,7 @@ export default function Navbar() {
                         priority
                     />
                     <h1 className="text-[2rem] font-bold font-sans tracking-tight lg:text-[2rem]">
-                        Ganbatte
+                        GanbattePM
                     </h1>
                 </Link>
                 
@@ -119,12 +151,12 @@ export default function Navbar() {
                         </>
                     )}
                     
-                    <Link
-                        href="/chat"
+                    <button
+                        onClick={() => verifySessionAndNavigate("/chat")}
                         className="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg overflow-hidden transition-all duration-300 bg-lime-400 text-black hover:bg-lime-300 px-4 py-2.5 font-medium text-sm shadow-lg"
                     >
                         <span className="relative z-10 font-bold flex">Request Delivery</span>
-                    </Link>
+                    </button>
                 </div>
                 
                 {/* Mobile menu button */}
@@ -202,13 +234,15 @@ export default function Navbar() {
                                     )}
                                 </>
                             )}
-                            <Link
-                                href="/chat"
-                                onClick={() => setIsMenuOpen(false)}
-                                className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors"
+                            <button
+                                onClick={() => {
+                                    setIsMenuOpen(false)
+                                    verifySessionAndNavigate("/chat")
+                                }}
+                                className="block px-3 py-2 bg-lime-400 text-black text-center rounded-md font-semibold hover:bg-lime-300 transition-colors w-full text-left"
                             >
                                 Request Delivery
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>

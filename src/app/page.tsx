@@ -6,9 +6,41 @@ import { MessageCircle, ClockAlert, PackageCheck } from 'lucide-react'
 import React from 'react'
 import { useAuthContext } from './providers'
 import UnifiedNavbar from './components/nav/UnifiedNavbar'
+import { createClient } from '../lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const { user, loading, isAuthenticated, isCustomer, isStaff, isAdmin } = useAuthContext()
+  const router = useRouter()
+
+  // Function to verify session before navigation
+  const verifySessionAndNavigate = async (targetPath: string) => {
+    try {
+      // If not authenticated, redirect to auth
+      if (!isAuthenticated) {
+        router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+        return
+      }
+
+      // Verify session is valid on server-side
+      const supabase = createClient()
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        console.log('🔍 Session verification failed, redirecting to auth')
+        router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+        return
+      }
+
+      // Session is valid, navigate to target
+      console.log('🔍 Session verified, navigating to:', targetPath)
+      router.push(targetPath)
+    } catch (error) {
+      console.error('Session verification error:', error)
+      // Fallback to auth page
+      router.push(`/auth?redirectTo=${encodeURIComponent(targetPath)}`)
+    }
+  }
 
   return (
     <main className="h-screen overflow-y-scroll scroll-smooth bg-black text-white">
@@ -16,10 +48,10 @@ export default function HomePage() {
       <UnifiedNavbar />
 
       {/* HERO */}
-      <section className="min-h-screen flex flex-col items-center px-6 text-center space-y-0 relative pt-24 pb-48">
+      <section className="min-h-screen flex flex-col items-center px-6 text-center space-y-0 relative pt-16 md:pt-24 pb-48">
         {/* Outer wrapper container */}
         <div 
-          className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden mt-20 mb-16 flex-1 flex flex-col justify-center"
+          className="w-full max-w-6xl mx-auto p-8 md:p-12 rounded-xl relative overflow-hidden mt-12 md:mt-20 mb-16 flex-1 flex flex-col justify-center"
           style={{
             background: `
               linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
@@ -53,21 +85,21 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
             {isAuthenticated ? (
               <>
-                <Link
-                  href={isCustomer ? "/chat" : (isStaff || isAdmin ? "/staff/jobs" : "/jobs")}
+                <button
+                  onClick={() => verifySessionAndNavigate(isCustomer ? "/chat" : (isStaff || isAdmin ? "/staff/jobs" : "/jobs"))}
                   className="inline-block bg-lime-400 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,.7)] hover:shadow-lime-400/50"
                 >
-                  {isCustomer ? 'Request a Delivery →' : 'View Jobs →'}
-                </Link>
+                  {isCustomer ? 'Request Delivery →' : 'View Jobs →'}
+                </button>
               </>
             ) : (
               <>
-                <Link
-                  href="/chat"
+                <button
+                  onClick={() => verifySessionAndNavigate("/chat")}
                   className="inline-block bg-lime-400 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,.7)] hover:shadow-lime-400/50"
                 >
-                  Request a Delivery →
-                </Link>
+                  Request Delivery →
+                </button>
                 <Link
                   href="/auth"
                   className="inline-block bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-lg text-lg transition drop-shadow-xl border-2 border-white/20 hover:border-white/40"
@@ -82,7 +114,7 @@ export default function HomePage() {
 
       {/* FEATURES */}
       <section id="features" className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Why Ganbatte?</h2>
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Why GanbattePM?</h2>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
@@ -98,7 +130,7 @@ export default function HomePage() {
             <div className="max-w-6xl mx-auto relative z-10 font-sans">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-left">
                 <Feature
-                  title="Request Deliveries in Chat"
+                  title="teliveries in Chat"
                   icon={MessageCircle}
                   desc="Simply ask, and we deliver. Immediate responses, and seamless coordination." />
                 <Feature
@@ -117,7 +149,7 @@ export default function HomePage() {
 
       {/* ABOUT */}
       <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans relative">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">What is Ganbatte?</h2>
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">What is GanbattePM?</h2>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
@@ -132,13 +164,13 @@ export default function HomePage() {
           >
             <div className="max-w-6xl mx-auto text-center space-y-6 relative z-10 font-sans">
               <p className="text-gray-100 text-lg drop-shadow-lg">
-                Ganbatte is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
+                GanbattePM is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
               </p>
               <p className="text-gray-100 text-lg drop-shadow-lg">
                 We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers and handlers behind the wheel.
               </p>
               <p className="text-gray-100 text-lg drop-shadow-lg">
-                Keep your parts moving and projects on track.
+              Ensuring your critical operations never stop.
               </p>
               <p className="text-md text-gray-200 drop-shadow-lg"> <i>Ganbatte</i> (頑張って) means <i>do your best.</i> </p>
             </div>
@@ -260,7 +292,7 @@ export default function HomePage() {
       {/* MAKE PAYLOAD MOVES */}
       <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
-        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos, we move the parts that keep your projects moving.</p>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.</p>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
           <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
