@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, useRef, useState } from 'react'
+import { ChangeEvent, useRef, useState, useEffect } from 'react'
 import { Camera, Upload, X, FileText } from 'lucide-react'
 
 interface Job {
@@ -21,11 +21,26 @@ export interface StaffActionsProps {
 export default function StaffActions({ job, uploading, onStatusChange, onFileUpload, onDeletePhoto, onConfirmPickup }: StaffActionsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [uploadProgress, setUploadProgress] = useState<string>('')
+    const [isMobile, setIsMobile] = useState(false)
+
+    // Check if device is mobile
+    useEffect(() => {
+        const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        setIsMobile(mobile)
+    }, [])
 
     const handleTakePhotoClick = () => {
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
             fileInputRef.current.setAttribute('accept', 'image/*')
+            
+            // Add capture attribute for mobile camera
+            if (isMobile) {
+                fileInputRef.current.setAttribute('capture', 'environment')
+            } else {
+                fileInputRef.current.removeAttribute('capture')
+            }
+            
             fileInputRef.current.click()
         }
     }
@@ -34,6 +49,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
             fileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls')
+            fileInputRef.current.removeAttribute('capture')
             fileInputRef.current.click()
         }
     }
@@ -123,7 +139,7 @@ export default function StaffActions({ job, uploading, onStatusChange, onFileUpl
                         className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 text-white font-semibold py-2 px-4 rounded w-full transition-colors"
                     >
                         <Camera size={18} />
-                        Take Photo
+                        {isMobile ? 'Camera' : 'Take Photo'}
                     </button>
                     <button
                         onClick={handleUploadFileClick}
