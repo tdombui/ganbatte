@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.840.0",
     "@react-google-maps/api": "^2.20.7",
     "@stripe/stripe-js": "^7.4.0",
     "@supabase/ssr": "^0.6.1",
