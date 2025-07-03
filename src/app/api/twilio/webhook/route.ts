@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
         .insert({
           phone_number: cleanPhone,
           name: `Customer ${cleanPhone.slice(-4)}`, // Temporary name
+          sms_consent: false, // Default to false for new customers
         })
         .select()
         .single();
@@ -57,6 +58,77 @@ export async function POST(request: NextRequest) {
 
       customer = newCustomer;
       console.log(`✅ Created new customer: ${customer.id}`);
+    }
+
+    // Handle SMS consent flow
+    if (!customer.sms_consent) {
+      const message = body.toLowerCase().trim();
+      
+      if (message === 'yes' || message === 'y' || message === 'yup') {
+        // Customer consented
+        await supabase
+          .from('twilio_customers')
+          .update({ sms_consent: true, consent_date: new Date().toISOString() })
+          .eq('id', customer.id);
+        
+        const consentResponse = `Thank you! You're now opted in to receive delivery updates via SMS. Reply STOP anytime to opt out. What do you need delivered today?`;
+        
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${consentResponse}</Message>
+</Response>`;
+
+        return new NextResponse(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      } else if (message === 'stop' || message === 'no' || message === 'n') {
+        // Customer declined
+        const declineResponse = `You're opted out. You won't receive any more messages from us.`;
+        
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${declineResponse}</Message>
+</Response>`;
+
+        return new NextResponse(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      } else {
+        // First message - ask for consent
+        const consentMessage = `Welcome to GanbattePM! 🚚 We deliver mission-critical payloads across Southern California. To help you, we need your consent to send SMS updates about your deliveries. Reply YES to continue or STOP to opt out. Standard messaging rates apply.`;
+        
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${consentMessage}</Message>
+</Response>`;
+
+        return new NextResponse(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+    }
+
+    // Handle STOP command for opted-in customers
+    if (body.toLowerCase().trim() === 'stop') {
+      await supabase
+        .from('twilio_customers')
+        .update({ sms_consent: false })
+        .eq('id', customer.id);
+      
+      const stopResponse = `You've been opted out. You won't receive any more messages from us.`;
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${stopResponse}</Message>
+</Response>`;
+
+      return new NextResponse(twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
     // Update last interaction

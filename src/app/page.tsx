@@ -147,6 +147,96 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* IMPACT */}
+      <section className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Our Impact</h2>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
+          <div 
+            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            style={{
+              background: `
+                linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
+                url('/noise.png')
+              `,
+              backgroundBlendMode: 'overlay',
+              backgroundSize: '100% 100%, 200px 200px'
+            }}
+          >
+            <div className="max-w-6xl mx-auto relative z-10 font-sans">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
+                <StatCard
+                  number="2,200+"
+                  label="Kilograms Moved"
+                  description="Mission-critical payloads delivered"
+                />
+                <StatCard
+                  number="250+"
+                  label="Trips Completed"
+                  description="Successful deliveries across SoCal"
+                />
+                <StatCard
+                  number="30+"
+                  label="Happy Clients"
+                  description="From automotive to manufacturing"
+                />
+                <StatCard
+                  number="20,000+"
+                  label="Miles Driven"
+                  description="Optimized routes across the region"
+                />
+              </div>
+              <div className="mt-12 text-center">
+                <p className="text-gray-100 text-lg drop-shadow-lg max-w-3xl mx-auto">
+                  Trusted by leading automotive shops, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PAYLOADS */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.</p>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <PayloadCard
+                src="/payloads/brake.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/wheel.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/tire.webp"
+                gradientType="top"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/coilover.webp"
+                gradientType="bottom"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/turbo.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
+              <PayloadCard
+                src="/payloads/bumper.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ABOUT */}
       <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans relative">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">What is GanbattePM?</h2>
@@ -247,7 +337,7 @@ export default function HomePage() {
       {/* ENTERPRISE */}
       <section id="enterprise" className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Enterprise Logistics</h2>
-        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">Scale your operations with dedicated logistics infrastructure and priority support.</p>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">Scale your operations with dedicated last-mile logistics infrastructure and priority support.</p>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
@@ -284,48 +374,6 @@ export default function HomePage() {
                   Get in Touch  →
                 </a>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* MAKE PAYLOAD MOVES */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
-        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.</p>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
-          <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              <PayloadCard
-                src="/payloads/brake.webp"
-                gradientType="top"
-                mobileGradientType="top"
-              />
-              <PayloadCard
-                src="/payloads/wheel.webp"
-                gradientType="top"
-                mobileGradientType="top"
-              />
-              <PayloadCard
-                src="/payloads/tire.webp"
-                gradientType="top"
-                mobileGradientType="middle"
-              />
-              <PayloadCard
-                src="/payloads/coilover.webp"
-                gradientType="bottom"
-                mobileGradientType="middle"
-              />
-              <PayloadCard
-                src="/payloads/turbo.webp"
-                gradientType="bottom"
-                mobileGradientType="bottom"
-              />
-              <PayloadCard
-                src="/payloads/bumper.webp"
-                gradientType="bottom"
-                mobileGradientType="bottom"
-              />
             </div>
           </div>
         </div>
@@ -452,6 +500,16 @@ function PayloadCard({ src, gradientType, mobileGradientType }: { src: string, g
           />
         </div>
       </div>
+    </div>
+  )
+}
+
+function StatCard({ number, label, description }: { number: string, label: string, description: string }) {
+  return (
+    <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-4 rounded-lg hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+      <div className="text-2xl md:text-3xl font-bold text-white drop-shadow-2xl mb-2 break-words">{number}</div>
+      <div className="text-base font-semibold text-white drop-shadow-lg mb-2">{label}</div>
+      <div className="text-xs text-gray-200 drop-shadow-lg leading-tight">{description}</div>
     </div>
   )
 }
