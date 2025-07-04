@@ -115,7 +115,7 @@ export default function ProfilePage() {
   }
 
   const handleSmsOptInToggle = async () => {
-    if (!formData.phone.trim()) {
+    if (!smsOptIn && !formData.phone.trim()) {
       setMessage({ type: 'error', text: 'Please enter a phone number before enabling SMS updates.' })
       return
     }
@@ -124,22 +124,79 @@ export default function ProfilePage() {
     try {
       const supabase = createClient()
       
-      // Update profiles table with phone number and SMS opt-in status
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          phone: formData.phone.trim(),
-          sms_opt_in: !smsOptIn
-        })
-        .eq('id', user?.id)
+      if (smsOptIn) {
+        // Disabling SMS - clear phone number and SMS opt-in
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            phone: null,
+            sms_opt_in: false
+          })
+          .eq('id', user?.id)
 
-      if (profileError) {
-        console.error('Error updating profile:', profileError)
-        throw new Error('Failed to update SMS preferences')
-      }
+        if (profileError) {
+          console.error('Error updating profile:', profileError)
+          throw new Error('Failed to update SMS preferences')
+        }
 
-      // Also update twilio_customers table if enabling SMS
-      if (!smsOptIn) {
+        // Clear phone number from user metadata
+        try {
+          const { error: userUpdateError } = await supabase.auth.updateUser({
+            data: { phone_number: null }
+          })
+
+          if (userUpdateError) {
+            console.error('Error clearing user metadata:', userUpdateError)
+          }
+        } catch (error) {
+          console.error('Error clearing user metadata:', error)
+        }
+
+        // Remove from twilio_customers table
+        try {
+          const { error: twilioError } = await supabase
+            .from('twilio_customers')
+            .delete()
+            .eq('phone_number', formData.phone.trim())
+
+          if (twilioError) {
+            console.error('Error removing from twilio_customers:', twilioError)
+          }
+        } catch (error) {
+          console.error('Error removing from twilio_customers:', error)
+        }
+
+        // Clear phone number from form
+        setFormData(prev => ({ ...prev, phone: '' }))
+      } else {
+        // Enabling SMS - set phone number and SMS opt-in
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            phone: formData.phone.trim(),
+            sms_opt_in: true
+          })
+          .eq('id', user?.id)
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError)
+          throw new Error('Failed to update SMS preferences')
+        }
+
+        // Update user metadata with phone number
+        try {
+          const { error: userUpdateError } = await supabase.auth.updateUser({
+            data: { phone_number: formData.phone.trim() }
+          })
+
+          if (userUpdateError) {
+            console.error('Error updating user metadata:', userUpdateError)
+          }
+        } catch (error) {
+          console.error('Error updating user metadata:', error)
+        }
+
+        // Add to twilio_customers table
         try {
           const { error: twilioError } = await supabase
             .from('twilio_customers')
@@ -156,11 +213,9 @@ export default function ProfilePage() {
 
           if (twilioError) {
             console.error('Error updating twilio_customers:', twilioError)
-            // Don't throw, as the main profile update worked
           }
         } catch (error) {
           console.error('Error updating twilio_customers:', error)
-          // Don't throw, as the main profile update worked
         }
       }
 
@@ -185,12 +240,55 @@ export default function ProfilePage() {
       console.log('🔍 Saving profile data:', formData)
       console.log('🔍 Saving customer data:', customerData)
       
+      const supabase = createClient()
+      
       // Update profile
       const { error: profileError } = await updateProfile(formData)
       
       if (profileError) {
         console.error('❌ Profile update error:', profileError)
         throw profileError
+      }
+
+      // If phone number was updated, sync it across all tables
+      if (formData.phone && formData.phone.trim()) {
+        try {
+          // Update user metadata with phone number
+          const { error: userUpdateError } = await supabase.auth.updateUser({
+            data: { phone_number: formData.phone.trim() }
+          })
+
+          if (userUpdateError) {
+            console.error('❌ Error updating user metadata:', userUpdateError)
+          } else {
+            console.log('✅ Updated user metadata with phone number')
+          }
+
+          // Update twilio_customers table if SMS is enabled
+          if (smsOptIn) {
+            const { error: twilioError } = await supabase
+              .from('twilio_customers')
+              .upsert({
+                phone_number: formData.phone.trim(),
+                email: user?.email,
+                name: user?.full_name || user?.email,
+                sms_opt_in: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'phone_number'
+              })
+
+            if (twilioError) {
+              console.error('❌ Error updating twilio_customers:', twilioError)
+            } else {
+              console.log('✅ Updated twilio_customers table')
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error syncing phone number:', error)
+          // Don't fail the entire save operation for phone sync issues
+        }
       }
 
       // Update customer data if user is a customer
