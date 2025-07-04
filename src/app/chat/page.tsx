@@ -11,10 +11,17 @@ import UnifiedNavbar from '../components/nav/UnifiedNavbar'
 import { createClient } from '../../lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import PrivacyPolicy from '../components/ui/PrivacyPolicy'
+import TermsOfService from '../components/ui/TermsOfService'
 
-// Function to convert markdown bold to HTML
+// Function to convert markdown bold to HTML and handle links
 function parseMarkdownBold(text: string): string {
-    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Convert markdown bold
+    const result = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    
+    // Convert HTML links (already in HTML format)
+    // This allows us to use <a href="tel:..."> tags in messages
+    return result
 }
 
 // Helper function to get auth headers
@@ -73,6 +80,8 @@ export default function ChatPage() {
     const [parsedJob, setParsedJob] = useState<ParsedJob | null>(null)
     const [savedJob, setSavedJob] = useState<{ id: string } | null>(null)
     const [lastQuestion, setLastQuestion] = useState<'pickup' | 'dropoff' | 'deadline' | null>(null)
+    const [smsOptinMode, setSmsOptinMode] = useState(false)
+    const [smsConsent, setSmsConsent] = useState(false)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const router = useRouter()
 
@@ -129,9 +138,55 @@ export default function ChatPage() {
 
 
 
+    // Handle SMS opt-in submission
+    const handleSmsOptin = async (phoneNumber: string) => {
+        if (!smsConsent) {
+            setMessages((prev) => [...prev, `ai:Please check the consent box to enable SMS updates.`])
+            return
+        }
+
+        if (!phoneNumber.trim()) {
+            setMessages((prev) => [...prev, `ai:Please enter a valid phone number.`])
+            return
+        }
+
+        try {
+            const headers = await getAuthHeaders()
+            const response = await fetch('/api/twilio/createJob', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    phone_number: phoneNumber,
+                    sms_consent: true,
+                    consent_date: new Date().toISOString()
+                }),
+            })
+
+            if (response.ok) {
+                setMessages((prev) => [
+                    ...prev,
+                    `ai:✅ SMS updates enabled!\n\nYou'll now receive delivery updates, ETA notifications, and job status messages from GanbattePM.\n\nText us anytime at <a href="tel:1-877-684-5729" class="text-emerald-400 hover:text-emerald-300 underline">1(877) 684-5729</a>:\n• "ETA" for delivery updates\n• "NEW" to book another job\n• "STATUS" for current job status\n\nTo stop receiving SMS updates, reply "STOP" to any message.`
+                ])
+                setSmsOptinMode(false)
+                setSmsConsent(false)
+            } else {
+                setMessages((prev) => [...prev, `ai:Failed to enable SMS updates. Please try again.`])
+            }
+        } catch (error) {
+            console.error('SMS opt-in error:', error)
+            setMessages((prev) => [...prev, `ai:Failed to enable SMS updates. Please try again.`])
+        }
+    }
+
     async function handleSend(message: string) {
         if (!isAuthenticated) {
             setShowAuthModal(true)
+            return
+        }
+
+        // Handle SMS opt-in mode
+        if (smsOptinMode) {
+            handleSmsOptin(message)
             return
         }
 
@@ -144,7 +199,7 @@ export default function ChatPage() {
 
         setMessages((prev) => [...prev, `user:${message}`])
 
-        if (awaitingConfirmation && parsedJob) {
+        if (awaitingConfirmation && parsedJob && !smsOptinMode) {
             const response = message.toLowerCase()
             if (['yes', 'y', 'yup', 'ye', 'yee'].includes(response)) {
                 setMessages((prev) => [...prev, `ai:Saving your job...`])
@@ -179,6 +234,42 @@ export default function ChatPage() {
                             ...prev,
                             `ai:Job booked. View your job here: /job/${job.id}`,
                         ])
+                        
+                        // Trigger SMS opt-in after successful job booking (only if user doesn't already have SMS enabled)
+                        setTimeout(async () => {
+                            try {
+                                const supabase = createClient()
+                                // Check if user already has SMS enabled by querying profiles table
+                                const { data: profileData, error } = await supabase
+                                    .from('profiles')
+                                    .select('phone, sms_opt_in')
+                                    .eq('id', user?.id)
+                                    .single()
+
+                                if (error) {
+                                    console.error('Error checking SMS status:', error)
+                                }
+
+                                const hasExistingPhone = user?.phone || profileData?.phone || profileData?.sms_opt_in
+                                if (!hasExistingPhone) {
+                                    setSmsOptinMode(true)
+                                    setMessages((prev) => [
+                                        ...prev,
+                                        `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
+                                    ])
+                                }
+                            } catch (error) {
+                                console.error('Error checking SMS status:', error)
+                                // Fallback to checking user.phone only
+                                if (!user?.phone) {
+                                    setSmsOptinMode(true)
+                                    setMessages((prev) => [
+                                        ...prev,
+                                        `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
+                                    ])
+                                }
+                            }
+                        }, 1000)
                     } else {
                         const errorText = await res.text()
                         console.error('❌ Failed to save job:', res.status, errorText)
@@ -316,6 +407,19 @@ export default function ChatPage() {
                         ...prev,
                         `ai:Job booked. View your job here: /job/${job.id}`,
                     ])
+                    
+                    // Trigger SMS opt-in after successful job booking (only if user doesn't already have SMS enabled)
+                    setTimeout(() => {
+                        // Check if user already has SMS enabled by looking for existing phone number
+                        const hasExistingPhone = user?.phone
+                        if (!hasExistingPhone) {
+                            setSmsOptinMode(true)
+                            setMessages((prev) => [
+                                ...prev,
+                                `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
+                            ])
+                        }
+                    }, 1000)
                 } else {
                     const errorText = await res.text()
                     console.error('❌ Failed to save job:', res.status, errorText)
@@ -551,6 +655,24 @@ export default function ChatPage() {
                                     )}
                                 </div>
 
+                                {/* SMS Consent Checkbox - shown only in SMS opt-in mode */}
+                                {smsOptinMode && (
+                                    <div className="bg-black/80 p-4 rounded-lg border border-white/20 mb-4">
+                                        <div className="flex items-start space-x-3">
+                                            <input 
+                                                type="checkbox" 
+                                                id="sms-consent" 
+                                                checked={smsConsent}
+                                                onChange={(e) => setSmsConsent(e.target.checked)}
+                                                className="mt-1"
+                                            />
+                                            <label htmlFor="sms-consent" className="text-sm text-gray-300">
+                                                I agree to receive SMS messages from GanbattePM for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe.
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <form
                                     onSubmit={(e) => {
                                         e.preventDefault()
@@ -570,8 +692,13 @@ export default function ChatPage() {
                                 >
                                     <input
                                         name="chat"
+                                        type={smsOptinMode ? "tel" : "text"}
                                         className="flex-1 px-3 sm:px-4 py-3 rounded-full bg-neutral-950 border border-neutral-700 focus:border-emerald-500 focus:outline-none text-sm sm:text-base"
-                                        placeholder={messages.length === 0 ? "What do you need delivered?" : "Type your message..."}
+                                        placeholder={
+                                            smsOptinMode 
+                                                ? "Enter your phone number (e.g., 555-123-4567)" 
+                                                : (messages.length === 0 ? "What do you need delivered?" : "Type your message...")
+                                        }
                                     />
                                     <button
                                         type="submit"
@@ -723,6 +850,17 @@ export default function ChatPage() {
                         <MultiLegForm />
                     </div>
                 )}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-8 pt-6 border-t border-neutral-700">
+                <div className="flex justify-center items-center space-x-6 text-center">
+                    <PrivacyPolicy />
+                    <TermsOfService />
+                    <span className="text-gray-500 text-sm">
+                        &copy; {new Date().getFullYear()} Ganbatte. All rights reserved.
+                    </span>
+                </div>
             </div>
 
             {/* Authentication Modal */}

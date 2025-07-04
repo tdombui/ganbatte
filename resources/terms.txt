@@ -1,0 +1,73 @@
+## Terms of Service for Ganbatte
+
+Effective Date: \[Insert Date]
+
+Welcome to Ganbatte ("we," "us," or "our"). These Terms of Service ("Terms") govern your use of our mission-critical logistics and local parts delivery services available through our platform (the "Service"). By using our Service, you agree to these Terms.
+
+---
+
+### 1. Description of Services
+
+Ganbatte provides local logistics services focused on the delivery of mission-critical payloads, including but not limited to automotive, aerospace, and manufacturing parts.
+
+Services include:
+
+* Same-day and scheduled delivery of parts
+* AI-assisted booking via SMS or chat
+* Job tracking and management
+
+### 2. Scheduling, Cancellations, and Refunds
+
+* **Scheduling:** Jobs may be scheduled via our AI agent (chat/text) or job creation interface. Delivery times can be edited in the job overview page.
+* **Cancellations:** You may cancel a job any time before your selected deadline, provided the job has not been initiated or picked up.
+* **Refunds:** Full refunds will be provided only if a job is cancelled *before* delivery has started. No refunds will be issued for completed or in-progress deliveries.
+
+### 3. User Responsibilities
+
+By using our platform, you agree to:
+
+* Provide accurate and complete delivery details, addresses, and descriptions
+* Pay all applicable delivery and service fees
+* Refrain from booking delivery of any prohibited or illegal items (see Section 5)
+
+### 4. Liability Disclaimer
+
+Ganbatte is not liable for:
+
+* Damaged goods, unless due to proven negligence by Ganbatte staff (note: photo documentation is performed at pickup)
+* Delays caused by weather, road conditions, or unforeseen circumstances
+* Any loss of revenue, profits, or indirect damages resulting from delivery outcomes
+
+### 5. Prohibited Items
+
+You may not request delivery of:
+
+* Weapons or firearm components
+* Illegal drugs or controlled substances
+* Hazardous materials or unauthorized chemicals
+* Perishable food or beverages
+
+Ganbatte reserves the right to refuse or cancel any job that violates these restrictions.
+
+### 6. Modification of Services
+
+We reserve the right to modify or discontinue any part of our services at any time. Changes to features, pricing, or terms will be communicated in advance.
+
+### 7. Termination
+
+We may suspend or terminate access to our service at our discretion if you violate these Terms or any applicable laws.
+
+### 8. Governing Law
+
+These Terms shall be governed by and construed in accordance with the laws of the State of California, USA.
+
+### 9. Contact Us
+
+If you have any questions or concerns about these Terms, you may contact us via:
+
+* **Email:** \[Insert Contact Email]
+* **Contact Form:** \[Insert Link]
+
+---
+
+By using Ganbatte, you agree to these Terms in full.

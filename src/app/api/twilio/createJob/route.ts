@@ -1,108 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
-
-// Initialize Supabase client with service role key
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { phoneNumber, message, conversationHistory } = await request.json();
-
-    console.log(`📱 Creating job for ${phoneNumber}: ${message}`);
-
-    // Get customer
-    const { data: customer, error: customerError } = await supabase
-      .from('twilio_customers')
-      .select('*')
-      .eq('phone_number', phoneNumber)
-      .single();
-
-    if (customerError || !customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-    }
-
-    // Use OpenAI to extract job details from conversation
-    const systemPrompt = `You are a job creation assistant. Extract delivery job details from the conversation.
-
-Extract and return ONLY a JSON object with these fields:
-- pickup_address: string (required)
-- dropoff_address: string (required) 
-- deadline: string (optional, ISO date format)
-- description: string (optional, brief description)
-- customer_name: string (optional)
-
-If any required fields are missing, return null for the entire object.
-Be strict about requiring both addresses.`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Conversation history: ${conversationHistory}\n\nLatest message: ${message}` }
-      ],
-      max_tokens: 300,
-      temperature: 0.1,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || "";
+    const supabase = await createClient();
     
-    let jobData;
-    try {
-      jobData = JSON.parse(aiResponse);
-    } catch {
-      console.log('Failed to parse AI response as JSON:', aiResponse);
-      return NextResponse.json({ 
-        success: false, 
-        message: "I need more details. Please provide pickup and dropoff addresses." 
+    // Get the current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { phone_number, sms_consent } = await request.json();
+    
+    console.log('🔍 SMS Opt-in Request:', { phone_number, sms_consent, userId: user.id });
+
+    if (!phone_number || !sms_consent) {
+      console.log('❌ Missing required fields:', { phone_number, sms_consent });
+      return NextResponse.json({ error: 'Phone number and consent are required' }, { status: 400 });
+    }
+
+    // Insert or update the twilio_customers record
+    console.log('🔍 Saving to twilio_customers table:', { phone_number, email: user.email });
+    
+    // First try with just the basic fields to see if the table works
+    const { data: twilioData, error: twilioError } = await supabase
+      .from('twilio_customers')
+      .upsert({
+        phone_number: phone_number,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+        sms_opt_in: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'phone_number'
       });
+
+    if (twilioError) {
+      console.error('❌ Error saving SMS opt-in:', twilioError);
+      return NextResponse.json({ error: 'Failed to save SMS preferences' }, { status: 500 });
     }
+    
+    console.log('✅ Saved to twilio_customers:', twilioData);
 
-    if (!jobData || !jobData.pickup_address || !jobData.dropoff_address) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "I need both pickup and dropoff addresses to create your delivery job." 
-      });
+    // Also update the user's auth profile and customer profile with the phone number
+    console.log('🔍 Updating user profile with phone:', phone_number);
+    
+    // Only update if phone number is not empty
+    if (phone_number && phone_number.trim()) {
+      try {
+        // Update user metadata instead of phone field to avoid SMS verification
+        const { data: profileData, error: profileError } = await supabase.auth.updateUser({
+          data: { phone_number: phone_number.trim() }
+        });
+
+        if (profileError) {
+          console.error('❌ Error updating user profile:', profileError);
+          // Don't fail the request if profile update fails, but log it
+        } else {
+          console.log('✅ Updated user profile:', profileData);
+        }
+
+        // Update the profiles table with the phone number and SMS opt-in status
+        const { data: profileUpdateData, error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ 
+            phone: phone_number.trim(),
+            sms_opt_in: true
+          })
+          .eq('id', user.id);
+
+        if (profileUpdateError) {
+          console.error('❌ Error updating profile table:', profileUpdateError);
+        } else {
+          console.log('✅ Updated profile table:', profileUpdateData);
+        }
+
+      } catch (error) {
+        console.error('❌ Exception updating profiles:', error);
+      }
+    } else {
+      console.log('⚠️ Phone number is empty, skipping profile update');
     }
-
-    // Create the job
-    const { data: job, error: jobError } = await supabase
-      .from('jobs')
-      .insert({
-        customer_id: customer.id,
-        pickup_address: jobData.pickup_address,
-        dropoff_address: jobData.dropoff_address,
-        deadline: jobData.deadline || null,
-        description: jobData.description || 'Job created via SMS',
-        status: 'pending',
-        created_via: 'sms'
-      })
-      .select()
-      .single();
-
-    if (jobError) {
-      console.error('Error creating job:', jobError);
-      return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
-    }
-
-    console.log(`✅ Created job ${job.id} for customer ${customer.id}`);
 
     return NextResponse.json({ 
       success: true, 
-      message: `Great! I've created your delivery job #${job.id.slice(-6)}. Pickup: ${jobData.pickup_address}. Dropoff: ${jobData.dropoff_address}. We'll notify you when a driver is assigned.`,
-      jobId: job.id
+      message: 'SMS preferences saved successfully' 
     });
 
   } catch (error) {
-    console.error('Create job error:', error);
+    console.error('SMS opt-in error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

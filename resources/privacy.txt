@@ -1,0 +1,79 @@
+## Privacy Policy for Ganbatte
+
+Effective Date: \[Insert Date]
+
+Ganbatte ("we," "us," or "our") values your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our services through our website or mobile application (the "Platform").
+
+---
+
+### 1. Information We Collect
+
+We collect the following types of personal information:
+
+* Name
+* Phone number
+* Email address
+* Delivery, mailing, and billing addresses
+* SMS preferences
+* Payment information (processed via third-party providers)
+* Job-related photos (uploaded during service requests)
+* Communication and chat history with our AI agent or team
+
+### 2. How We Use Your Information
+
+We use your personal information to:
+
+* Provide and fulfill our logistics and delivery services
+* Communicate with you via SMS and email
+* Verify your identity and payment method
+* Improve and optimize the Platform
+* Comply with legal obligations
+
+### 3. Data Storage and Retention
+
+We store delivery addresses and chat messages to support service operations. Your data is retained for as long as necessary to fulfill the purposes outlined in this Privacy Policy unless a longer retention period is required by law.
+
+### 4. Cookies and Tracking
+
+We currently do not use cookies or other tracking technologies. This may change as our services scale, in which case this policy will be updated accordingly.
+
+### 5. Third-Party Services
+
+We use the following third-party services, which may access your information as necessary to provide their respective services:
+
+* **Supabase** – for backend data storage
+* **OpenAI** – for AI chat parsing and assistance
+* **Cloudinary** – for image hosting and delivery
+* **Google Maps** – for routing and map services
+* **Twilio** – for SMS communication
+* **Resend** – for transactional emails
+* **Zoho** – for business email communication
+
+We are not responsible for the privacy practices of these providers but strive to work with reputable and compliant vendors.
+
+### 6. Data Security
+
+We implement reasonable technical and organizational measures to protect your personal data. However, no method of transmission or storage is 100% secure.
+
+### 7. Children’s Privacy
+
+Our services are intended for adults only. We do not knowingly collect data from individuals under 18 years old.
+
+### 8. Your Rights and Choices
+
+You may:
+
+* Access, update, or delete your personal information
+* Opt out of SMS and email communications
+* Contact us with questions or to exercise your data rights
+
+### 9. Contact Us
+
+For privacy-related inquiries, please reach out via:
+
+* **Email:** \[Insert Contact Email]
+* **Contact Form:** \[Insert Link]
+
+---
+
+We reserve the right to modify this Privacy Policy at any time. Updates will be posted on this page with the new effective date.

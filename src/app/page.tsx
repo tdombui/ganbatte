@@ -130,7 +130,7 @@ export default function HomePage() {
             <div className="max-w-6xl mx-auto relative z-10 font-sans">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-left">
                 <Feature
-                  title="Request Deliveries in Chat"
+                  title="Request Deliveries By Text"
                   icon={MessageCircle}
                   desc="Simply ask, and we deliver. Immediate responses, and seamless coordination." />
                 <Feature
@@ -149,7 +149,10 @@ export default function HomePage() {
 
       {/* IMPACT */}
       <section className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Our Impact</h2>
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Our Spec Sheet</h2>
+        <p className="text-gray-100 text-lg drop-shadow-lg max-w-3xl mx-auto mb-8 text-center">
+          Trusted by leading automotive shops, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
+        </p>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
           <div 
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
@@ -163,7 +166,7 @@ export default function HomePage() {
             }}
           >
             <div className="max-w-6xl mx-auto relative z-10 font-sans">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
+              <div className="grid grid-cols-2 gap-6 md:gap-8 text-center">
                 <StatCard
                   number="2,200+"
                   label="Kilograms Moved"
@@ -175,20 +178,15 @@ export default function HomePage() {
                   description="Successful deliveries across SoCal"
                 />
                 <StatCard
-                  number="30+"
+                  number="15+"
                   label="Happy Clients"
                   description="From automotive to manufacturing"
                 />
                 <StatCard
-                  number="20,000+"
+                  number="25,000+"
                   label="Miles Driven"
                   description="Optimized routes across the region"
                 />
-              </div>
-              <div className="mt-12 text-center">
-                <p className="text-gray-100 text-lg drop-shadow-lg max-w-3xl mx-auto">
-                  Trusted by leading automotive shops, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
-                </p>
               </div>
             </div>
           </div>
@@ -241,7 +239,7 @@ export default function HomePage() {
       <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans relative">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">What is GanbattePM?</h2>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
-          <div 
+          <div id='gradient'
             className="w-full h-full p-8 md:p-12 rounded-xl relative"
             style={{
               background: `
@@ -264,17 +262,18 @@ export default function HomePage() {
               </p>
               <p className="text-md text-gray-200 drop-shadow-lg"> <i>Ganbatte</i> (頑張って) means <i>do your best.</i> </p>
             </div>
+            {/* No1 image positioned at bottom right of the gradient div */}
+            <div className="absolute md:bottom-[-12] md:right-[-38] bottom-[-48] right-[-8] sm:bottom-[-18] sm:right-[18] z-20 pointer-events-none select-none">
+              <Image
+                src="/no1.webp"
+                alt="No1"
+                width={144}
+                height={144}
+                className="w-auto h-49 drop-shadow-2xl"
+                draggable={false}
+              />
+            </div>
           </div>
-        </div>
-        {/* No1 image positioned at bottom right of the section */}
-        <div className="absolute md:bottom-[-12] md:right-[-12] bottom-[-8] right-[-8] z-20">
-          <Image
-            src="/no1.webp"
-            alt="No1"
-            width={144}
-            height={144}
-            className="w-auto h-49 drop-shadow-2xl"
-          />
         </div>
       </section>
 
@@ -382,6 +381,19 @@ export default function HomePage() {
       {/* FOOTER */}
       <section className=" flex flex-col justify-center items-center px-6 py-8 text-center">
         <div className="w-full max-w-6xl mx-auto">
+          {/* Logo Row */}
+          <div className="flex justify-center items-center mb-8">
+            <Image
+              src="/gradient_box_logo_4.webp"
+              alt="Ganbatte Box Logo"
+              width={600}
+              height={180}
+              className="rounded-3xl w-full max-w-2xl h-auto object-cover drop-shadow-2xl "
+              priority
+              unoptimized
+              quality={100}
+            />
+          </div>
           {/* Social Links with Turbo Home Image */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div className="flex justify-center items-center">

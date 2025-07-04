@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { updateProfile, updateCustomerProfile } from '../../lib/auth-utils'
 import SmartNavbar from '../components/nav/SmartNavbar'
 import { User, Mail, Phone, Building, Shield, Save, ArrowLeft } from 'lucide-react'
+import { createClient } from '../../lib/supabase/client'
 
 export default function ProfilePage() {
   const { user, loading, isAuthenticated } = useAuthContext()
@@ -16,6 +17,8 @@ export default function ProfilePage() {
     phone: '',
     company: '',
   })
+  const [smsOptIn, setSmsOptIn] = useState(false)
+  const [smsLoading, setSmsLoading] = useState(false)
   const [customerData, setCustomerData] = useState({
     default_address: '',
     billing_address: '',
@@ -35,20 +38,72 @@ export default function ProfilePage() {
 
   // Load user data when component mounts
   useEffect(() => {
-    if (user) {
-      setFormData({
-        full_name: user.full_name || '',
-        phone: user.phone || '',
-        company: user.company || '',
-      })
-      if (user.customer) {
-        setCustomerData({
-          default_address: user.customer.default_address || '',
-          billing_address: user.customer.billing_address || '',
-          notes: user.customer.notes || '',
+    const loadUserData = async () => {
+      if (user) {
+        // Check for phone number in twilio_customers table
+        let phoneNumber = user.phone || ''
+        
+        try {
+          const supabase = createClient()
+          
+          // Get the actual Supabase user object to access metadata
+          const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser()
+          
+          if (userError) {
+            console.error('Error getting Supabase user:', userError)
+          } else if (supabaseUser?.user_metadata?.phone_number) {
+            phoneNumber = supabaseUser.user_metadata.phone_number
+          }
+
+          // Check if user has SMS enabled by looking at profiles.sms_opt_in
+          try {
+            const { data: profileData, error } = await supabase
+              .from('profiles')
+              .select('sms_opt_in')
+              .eq('id', user.id)
+              .single()
+
+            if (error) {
+              console.error('Error checking SMS status:', error)
+              // Fallback: assume SMS is enabled if they have a phone number
+              if (phoneNumber || user.phone) {
+                setSmsOptIn(true)
+              }
+            } else if (profileData?.sms_opt_in) {
+              // SMS is enabled in profiles table
+              setSmsOptIn(true)
+            } else if (phoneNumber || user.phone) {
+              // Fallback: if they have a phone number, assume SMS is enabled
+              setSmsOptIn(true)
+            }
+          } catch (error) {
+            console.error('Error checking SMS status:', error)
+            // Fallback: if they have a phone number, assume SMS is enabled
+            if (phoneNumber || user.phone) {
+              setSmsOptIn(true)
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error)
+          // Continue with user.phone if there's an error
+        }
+
+        setFormData({
+          full_name: user.full_name || '',
+          phone: phoneNumber,
+          company: user.company || '',
         })
+        if (user.customer) {
+          setCustomerData({
+            default_address: user.customer.default_address || '',
+            billing_address: user.customer.billing_address || '',
+            notes: user.customer.notes || '',
+          })
+        }
       }
     }
+
+    loadUserData()
   }, [user])
 
   const handleInputChange = (field: string, value: string) => {
@@ -57,6 +112,69 @@ export default function ProfilePage() {
 
   const handleCustomerInputChange = (field: string, value: string) => {
     setCustomerData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSmsOptInToggle = async () => {
+    if (!formData.phone.trim()) {
+      setMessage({ type: 'error', text: 'Please enter a phone number before enabling SMS updates.' })
+      return
+    }
+
+    setSmsLoading(true)
+    try {
+      const supabase = createClient()
+      
+      // Update profiles table with phone number and SMS opt-in status
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          phone: formData.phone.trim(),
+          sms_opt_in: !smsOptIn
+        })
+        .eq('id', user?.id)
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+        throw new Error('Failed to update SMS preferences')
+      }
+
+      // Also update twilio_customers table if enabling SMS
+      if (!smsOptIn) {
+        try {
+          const { error: twilioError } = await supabase
+            .from('twilio_customers')
+            .upsert({
+              phone_number: formData.phone.trim(),
+              email: user?.email,
+              name: user?.full_name || user?.email,
+              sms_opt_in: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'phone_number'
+            })
+
+          if (twilioError) {
+            console.error('Error updating twilio_customers:', twilioError)
+            // Don't throw, as the main profile update worked
+          }
+        } catch (error) {
+          console.error('Error updating twilio_customers:', error)
+          // Don't throw, as the main profile update worked
+        }
+      }
+
+      setSmsOptIn(!smsOptIn)
+      setMessage({ 
+        type: 'success', 
+        text: `SMS updates ${!smsOptIn ? 'enabled' : 'disabled'} successfully!` 
+      })
+    } catch (error) {
+      console.error('Error toggling SMS opt-in:', error)
+      setMessage({ type: 'error', text: 'Failed to update SMS preferences. Please try again.' })
+    } finally {
+      setSmsLoading(false)
+    }
   }
 
   const handleSave = async () => {
@@ -196,6 +314,34 @@ export default function ProfilePage() {
                       disabled={!isEditing}
                       className="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:border-lime-400"
                     />
+                  </div>
+
+                  {/* SMS Opt-in Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div>
+                      <h3 className="font-medium text-white mb-1">SMS Updates</h3>
+                      <p className="text-sm text-gray-400">
+                        Receive delivery updates, ETA requests, and job notifications via text message
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm ${smsOptIn ? 'text-lime-400' : 'text-gray-400'}`}>
+                        {smsOptIn ? 'Enabled' : 'Disabled'}
+                      </span>
+                      <button
+                        onClick={handleSmsOptInToggle}
+                        disabled={smsLoading || !formData.phone.trim()}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          smsOptIn ? 'bg-lime-500' : 'bg-gray-600'
+                        } ${smsLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            smsOptIn ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                   
                   <div>
