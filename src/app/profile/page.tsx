@@ -130,99 +130,26 @@ export default function ProfilePage() {
     try {
       const supabase = createClient()
       
+      // Use bulletproof database function for atomic update
+      const { data, error } = await supabase
+        .rpc('update_user_phone_and_sms', {
+          user_id: user?.id,
+          phone_number: smsOptIn ? null : formData.phone.trim(),
+          sms_opt_in: !smsOptIn
+        })
+
+      if (error) {
+        console.error('Error updating SMS preferences:', error)
+        throw new Error('Failed to update SMS preferences')
+      }
+
+      if (!data) {
+        throw new Error('Database update failed')
+      }
+
+      // Clear phone number from form if disabling SMS
       if (smsOptIn) {
-        // Disabling SMS - clear phone number and SMS opt-in
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ 
-            phone: null,
-            sms_opt_in: false
-          })
-          .eq('id', user?.id)
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError)
-          throw new Error('Failed to update SMS preferences')
-        }
-
-        // Clear phone number from user metadata
-        try {
-          const { error: userUpdateError } = await supabase.auth.updateUser({
-            data: { phone_number: null }
-          })
-
-          if (userUpdateError) {
-            console.error('Error clearing user metadata:', userUpdateError)
-          }
-        } catch (error) {
-          console.error('Error clearing user metadata:', error)
-        }
-
-        // Remove from twilio_customers table
-        try {
-          const { error: twilioError } = await supabase
-            .from('twilio_customers')
-            .delete()
-            .eq('phone_number', formData.phone.trim())
-
-          if (twilioError) {
-            console.error('Error removing from twilio_customers:', twilioError)
-          }
-        } catch (error) {
-          console.error('Error removing from twilio_customers:', error)
-        }
-
-        // Clear phone number from form
         setFormData(prev => ({ ...prev, phone: '' }))
-      } else {
-        // Enabling SMS - set phone number and SMS opt-in
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ 
-            phone: formData.phone.trim(),
-            sms_opt_in: true
-          })
-          .eq('id', user?.id)
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError)
-          throw new Error('Failed to update SMS preferences')
-        }
-
-        // Update user metadata with phone number
-        try {
-          const { error: userUpdateError } = await supabase.auth.updateUser({
-            data: { phone_number: formData.phone.trim() }
-          })
-
-          if (userUpdateError) {
-            console.error('Error updating user metadata:', userUpdateError)
-          }
-        } catch (error) {
-          console.error('Error updating user metadata:', error)
-        }
-
-        // Add to twilio_customers table
-        try {
-          const { error: twilioError } = await supabase
-            .from('twilio_customers')
-            .upsert({
-              phone_number: formData.phone.trim(),
-              email: user?.email,
-              name: user?.full_name || user?.email,
-              sms_opt_in: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'phone_number'
-            })
-
-          if (twilioError) {
-            console.error('Error updating twilio_customers:', twilioError)
-          }
-        } catch (error) {
-          console.error('Error updating twilio_customers:', error)
-        }
       }
 
       setSmsOptIn(!smsOptIn)
@@ -256,44 +183,22 @@ export default function ProfilePage() {
         throw profileError
       }
 
-      // If phone number was updated, sync it across all tables
+      // If phone number was updated, use bulletproof database function
       if (formData.phone && formData.phone.trim()) {
-        try {
-          // Update user metadata with phone number
-          const { error: userUpdateError } = await supabase.auth.updateUser({
-            data: { phone_number: formData.phone.trim() }
+        const { data: phoneUpdateData, error: phoneUpdateError } = await supabase
+          .rpc('update_user_phone_and_sms', {
+            user_id: user?.id,
+            phone_number: formData.phone.trim(),
+            sms_opt_in: smsOptIn
           })
 
-          if (userUpdateError) {
-            console.error('❌ Error updating user metadata:', userUpdateError)
-          } else {
-            console.log('✅ Updated user metadata with phone number')
-          }
-
-          // Update twilio_customers table if SMS is enabled
-          if (smsOptIn) {
-            const { error: twilioError } = await supabase
-              .from('twilio_customers')
-              .upsert({
-                phone_number: formData.phone.trim(),
-                email: user?.email,
-                name: user?.full_name || user?.email,
-                sms_opt_in: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'phone_number'
-              })
-
-            if (twilioError) {
-              console.error('❌ Error updating twilio_customers:', twilioError)
-            } else {
-              console.log('✅ Updated twilio_customers table')
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error syncing phone number:', error)
+        if (phoneUpdateError) {
+          console.error('❌ Error updating phone number:', phoneUpdateError)
           // Don't fail the entire save operation for phone sync issues
+        } else if (!phoneUpdateData) {
+          console.error('❌ Phone number update failed')
+        } else {
+          console.log('✅ Updated phone number and SMS preferences atomically')
         }
       }
 
