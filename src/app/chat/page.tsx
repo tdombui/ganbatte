@@ -250,7 +250,7 @@ export default function ChatPage() {
                                     console.error('Error checking SMS status:', error)
                                 }
 
-                                const hasExistingPhone = user?.phone || profileData?.phone || profileData?.sms_opt_in
+                                const hasExistingPhone = user?.phone || profileData?.phone || profileData?.sms_opt_in === true
                                 if (!hasExistingPhone) {
                                     setSmsOptinMode(true)
                                     setMessages((prev) => [
@@ -409,15 +409,44 @@ export default function ChatPage() {
                     ])
                     
                     // Trigger SMS opt-in after successful job booking (only if user doesn't already have SMS enabled)
-                    setTimeout(() => {
-                        // Check if user already has SMS enabled by looking for existing phone number
-                        const hasExistingPhone = user?.phone
-                        if (!hasExistingPhone) {
-                            setSmsOptinMode(true)
-                            setMessages((prev) => [
-                                ...prev,
-                                `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
-                            ])
+                    setTimeout(async () => {
+                        try {
+                            const supabase = createClient()
+                            // Check if user already has SMS enabled by querying profiles table
+                            const { data: profileData, error } = await supabase
+                                .from('profiles')
+                                .select('phone, sms_opt_in')
+                                .eq('id', user?.id)
+                                .single()
+
+                            if (error) {
+                                console.error('Error checking SMS status:', error)
+                            }
+
+                            const hasExistingPhone = user?.phone || profileData?.phone || profileData?.sms_opt_in === true
+                            console.log('🔍 SMS opt-in check:', { 
+                                userPhone: user?.phone, 
+                                profilePhone: profileData?.phone, 
+                                profileSmsOptIn: profileData?.sms_opt_in,
+                                hasExistingPhone 
+                            })
+                            if (!hasExistingPhone) {
+                                setSmsOptinMode(true)
+                                setMessages((prev) => [
+                                    ...prev,
+                                    `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
+                                ])
+                            }
+                        } catch (error) {
+                            console.error('Error checking SMS status:', error)
+                            // Fallback to checking user.phone only
+                            if (!user?.phone) {
+                                setSmsOptinMode(true)
+                                setMessages((prev) => [
+                                    ...prev,
+                                    `ai:📱 Get SMS Updates\n\nWant delivery updates, ETA requests, and the ability to book future jobs via text?\n\nEnter your phone number below to enable SMS notifications.`
+                                ])
+                            }
                         }
                     }, 1000)
                 } else {
