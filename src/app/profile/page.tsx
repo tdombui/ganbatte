@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function ProfilePage() {
           try {
             const { data: profileData, error } = await supabase
               .from('profiles')
-              .select('sms_opt_in')
+              .select('sms_opt_in, created_at')
               .eq('id', user.id)
               .single()
 
@@ -75,6 +76,11 @@ export default function ProfilePage() {
             } else if (phoneNumber || user.phone) {
               // Fallback: if they have a phone number, assume SMS is enabled
               setSmsOptIn(true)
+            }
+            
+            // Set the created_at date
+            if (profileData?.created_at) {
+              setCreatedAt(profileData.created_at)
             }
           } catch (error) {
             console.error('Error checking SMS status:', error)
@@ -529,7 +535,7 @@ export default function ProfilePage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Member since:</span>
                     <span className="text-white">
-                      {user ? new Date().toLocaleDateString() : 'N/A'}
+                      {createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}
                     </span>
                   </div>
                 </div>
