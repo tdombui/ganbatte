@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { stripeConfig } from '@/lib/stripe-config'
 
-// Use test key if available, otherwise fall back to live key
-const stripeSecretKey = process.env.STRIPE_SECRET_TEST_KEY || process.env.STRIPE_SECRET_KEY
-if (!stripeSecretKey) {
-  throw new Error('Neither STRIPE_SECRET_TEST_KEY nor STRIPE_SECRET_KEY is set')
-}
-
-const stripe = new Stripe(stripeSecretKey, {
+const stripe = new Stripe(stripeConfig.secretKey, {
   apiVersion: '2025-05-28.basil',
   typescript: true,
 })
 
-const endpointSecret = process.env.STRIPE_PAYMENT_LINKS_WEBHOOK_SECRET
+const endpointSecret = stripeConfig.paymentLinksWebhookSecret
 
 export async function POST(request: NextRequest) {
   console.log('🔔 Webhook received!')
@@ -45,6 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   console.log('Received Stripe webhook event:', event.type)
+  console.log('Event data:', JSON.stringify(event.data, null, 2))
 
   try {
     console.log('🔔 Processing webhook event type:', event.type)
@@ -88,17 +84,85 @@ export async function POST(request: NextRequest) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing completed checkout session:', session.id)
+  console.log('Session metadata:', session.metadata)
+  console.log('Session payment_link:', session.payment_link)
+  console.log('Session payment_intent:', session.payment_intent)
   
-  const jobId = session.metadata?.job_id
-  const paymentIntentId = session.payment_intent as string
+  // Try multiple strategies to find the job ID
+  let jobId = session.metadata?.job_id || session.metadata?.jobId
+  
+  // If not in session metadata, try to find it in the payment link metadata
+  if (!jobId && session.payment_link) {
+    try {
+      const paymentLink = await stripe.paymentLinks.retrieve(session.payment_link as string)
+      jobId = paymentLink.metadata?.job_id || paymentLink.metadata?.jobId
+      console.log('Found job ID in payment link metadata:', jobId)
+      console.log('Payment link metadata:', paymentLink.metadata)
+    } catch (error) {
+      console.error('Error retrieving payment link:', error)
+    }
+  }
+  
+  // If still not found, try to find job by payment link ID
+  if (!jobId && session.payment_link) {
+    const { data: jobs, error: findError } = await supabaseAdmin
+      .from('jobs')
+      .select('id, payment_status, stripe_payment_link_id')
+      .eq('stripe_payment_link_id', session.payment_link)
+      .limit(1)
+
+    if (!findError && jobs && jobs.length > 0) {
+      jobId = jobs[0].id
+      console.log('Found job by payment link ID:', jobId)
+      console.log('Job payment status:', jobs[0].payment_status)
+    }
+  }
+
+  // If still not found, try to find job by payment intent ID
+  if (!jobId && session.payment_intent) {
+    const { data: jobs, error: findError } = await supabaseAdmin
+      .from('jobs')
+      .select('id, payment_status, stripe_payment_intent_id')
+      .eq('stripe_payment_intent_id', session.payment_intent as string)
+      .limit(1)
+
+    if (!findError && jobs && jobs.length > 0) {
+      jobId = jobs[0].id
+      console.log('Found job by payment intent ID:', jobId)
+      console.log('Job payment status:', jobs[0].payment_status)
+    }
+  }
 
   if (!jobId) {
-    console.error('No job ID in session metadata')
+    console.error('❌ No job ID found in any metadata or database lookup')
     console.log('Session metadata:', session.metadata)
+    console.log('Session payment_link:', session.payment_link)
+    console.log('Session payment_intent:', session.payment_intent)
     return
   }
 
-  console.log('Found job ID in metadata:', jobId)
+  console.log('✅ Found job ID:', jobId)
+  const paymentIntentId = session.payment_intent as string
+
+  // Check current job status
+  const { data: currentJob, error: jobError } = await supabaseAdmin
+    .from('jobs')
+    .select('payment_status, stripe_payment_intent_id, paid_at')
+    .eq('id', jobId)
+    .single()
+
+  if (jobError) {
+    console.error('Error fetching current job status:', jobError)
+    return
+  }
+
+  console.log('Current job status:', currentJob)
+
+  // Only update if not already paid
+  if (currentJob.payment_status === 'paid') {
+    console.log('Job already marked as paid, skipping update')
+    return
+  }
 
   // Update job payment status to paid
   const { data: updateData, error: updateError } = await supabaseAdmin
@@ -113,46 +177,59 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     .select()
 
   if (updateError) {
-    console.error('Error updating job payment status:', updateError)
+    console.error('❌ Error updating job payment status:', updateError)
     return
   }
 
-  console.log('Successfully updated job payment status for job:', jobId)
+  console.log('✅ Successfully updated job payment status for job:', jobId)
   console.log('Updated job data:', updateData)
 }
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   console.log('Processing successful payment intent:', paymentIntent.id)
+  console.log('Payment intent metadata:', paymentIntent.metadata)
+  
+  // Try multiple strategies to find the job ID
+  let jobId = paymentIntent.metadata?.job_id || paymentIntent.metadata?.jobId
   
   // First try to find job by payment intent ID
-  const { data: jobs, error: findError } = await supabaseAdmin
-    .from('jobs')
-    .select('id')
-    .eq('stripe_payment_intent_id', paymentIntent.id)
-    .limit(1)
+  if (!jobId) {
+    const { data: jobs, error: findError } = await supabaseAdmin
+      .from('jobs')
+      .select('id, payment_status')
+      .eq('stripe_payment_intent_id', paymentIntent.id)
+      .limit(1)
 
-  let jobId: string | null = null
-
-  if (findError) {
-    console.error('Error finding job by payment intent ID:', findError)
-  } else if (jobs && jobs.length > 0) {
-    jobId = jobs[0].id
-    console.log('Found job by payment intent ID:', jobId)
-  } else {
-    // If not found by payment intent ID, try to find by payment link ID
-    console.log('No job found by payment intent ID, checking metadata...')
-    console.log('Payment intent metadata:', paymentIntent.metadata)
-    
-    // Look for job_id in metadata
-    const metadataJobId = paymentIntent.metadata?.job_id
-    if (metadataJobId) {
-      jobId = metadataJobId
-      console.log('Found job ID in payment intent metadata:', jobId)
+    if (!findError && jobs && jobs.length > 0) {
+      jobId = jobs[0].id
+      console.log('Found job by payment intent ID:', jobId)
+      console.log('Job payment status:', jobs[0].payment_status)
     }
   }
 
   if (!jobId) {
-    console.error('No job found for payment intent:', paymentIntent.id)
+    console.error('❌ No job found for payment intent:', paymentIntent.id)
+    console.log('Payment intent metadata:', paymentIntent.metadata)
+    return
+  }
+
+  // Check current job status
+  const { data: currentJob, error: jobError } = await supabaseAdmin
+    .from('jobs')
+    .select('payment_status, paid_at')
+    .eq('id', jobId)
+    .single()
+
+  if (jobError) {
+    console.error('Error fetching current job status:', jobError)
+    return
+  }
+
+  console.log('Current job status:', currentJob)
+
+  // Only update if not already paid
+  if (currentJob.payment_status === 'paid') {
+    console.log('Job already marked as paid, skipping update')
     return
   }
 
@@ -169,11 +246,11 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     .select()
 
   if (updateError) {
-    console.error('Error updating job payment status:', updateError)
+    console.error('❌ Error updating job payment status:', updateError)
     return
   }
 
-  console.log('Successfully updated job payment status for job:', jobId)
+  console.log('✅ Successfully updated job payment status for job:', jobId)
   console.log('Updated job data:', updateData)
 }
 

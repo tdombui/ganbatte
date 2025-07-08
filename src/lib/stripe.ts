@@ -1,10 +1,8 @@
 import Stripe from 'stripe'
+import { stripeConfig } from './stripe-config'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set')
-}
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+// Use the unified configuration
+export const stripe = new Stripe(stripeConfig.secretKey, {
   apiVersion: '2025-05-28.basil',
   typescript: true,
 })
@@ -66,10 +64,10 @@ export const createCheckoutSession = async ({
 }
 
 export const constructWebhookEvent = (body: string, signature: string) => {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecret = stripeConfig.webhookSecret
   
   if (!webhookSecret) {
-    throw new Error('STRIPE_WEBHOOK_SECRET is not set')
+    throw new Error('Webhook secret is not configured')
   }
 
   try {

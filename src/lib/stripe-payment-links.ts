@@ -1,10 +1,7 @@
 import Stripe from 'stripe'
+import { stripeConfig } from './stripe-config'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set')
-}
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+export const stripe = new Stripe(stripeConfig.secretKey, {
   apiVersion: '2025-05-28.basil',
   typescript: true,
 })
@@ -40,8 +37,8 @@ export const createPaymentLink = async ({
             unit_amount: Math.round(amount * 100), // Convert to cents
           },
           quantity: 1,
-        },
-      ] as any,
+        } as any,
+      ],
       after_completion: { type: 'redirect', redirect: { url: successUrl || 'https://ganbatte.com/success' } },
       metadata,
       ...(customerEmail && { customer_creation: 'always' }),

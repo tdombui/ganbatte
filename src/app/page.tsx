@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { MessageCircle, ClockAlert, PackageCheck } from 'lucide-react'
 import React from 'react'
 import { useAuthContext } from './providers'
 import UnifiedNavbar from './components/nav/UnifiedNavbar'
@@ -58,7 +57,7 @@ export default function HomePage() {
               linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
               url('/noise.png')
             `,
-            backgroundBlendMode: 'overlay',
+            backgroundBlendMode: 'hard-light',
             backgroundSize: '100% 100%, 200px 200px'
           }}
         >
@@ -136,45 +135,11 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">Why GanbattePM?</h2>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
-          <div 
-            className="w-full h-full p-8 md:p-12 rounded-xl relative"
-            style={{
-              background: `
-                linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
-                url('/noise.png')
-              `,
-              backgroundBlendMode: 'hard-light',
-              backgroundSize: '100% 100%, 200px 200px'
-            }}
-          >
-            <div className="max-w-6xl mx-auto relative z-10 font-sans">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 text-left">
-                <Feature
-                  title="Request Deliveries By Text"
-                  icon={MessageCircle}
-                  desc="Simply ask, and we deliver. Immediate responses, and seamless coordination." />
-                <Feature
-                  title="Track Orders in Real Time"
-                  icon={ClockAlert}
-                  desc="Track your orders with live routing to make sure deliveries are en route and on-time." />
-                <Feature
-                  title="Smarter Delivery"
-                  icon={PackageCheck}
-                  desc="Dispatch and routes streamlined by AI. Mission-critical deliveries with pro drivers behind the wheel." />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* IMPACT */}
       <section className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">Our Spec Sheet</h2>
-        <p className="text-gray-100 text-lg drop-shadow-lg max-w-3xl mx-auto mb-8 text-center font-sans">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Our Spec Sheet</h2>
+        <p className="text-gray-100 drop-shadow-lg max-w-3xl mx-auto mb-8 text-center">
           Trusted by leading automotive shops, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
         </p>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
@@ -191,88 +156,30 @@ export default function HomePage() {
           >
             <div className="max-w-6xl mx-auto relative z-10 font-sans">
               <div className="grid grid-cols-2 gap-6 md:gap-8 text-center">
-                {[
-                  { number: "2,200+", label: "Kilograms Moved", description: "Mission-critical payloads delivered" },
-                  { number: "250+", label: "Trips Completed", description: "Successful deliveries across SoCal" },
-                  { number: "15+", label: "Happy Clients", description: "From automotive to manufacturing" },
-                  { number: "25,000+", label: "Miles Driven", description: "Optimized routes across the region" }
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                    whileHover={{ y: -5, scale: 1.02 }}
-                  >
-                    <StatCard
-                      number={stat.number}
-                      label={stat.label}
-                      description={stat.description}
-                    />
-                  </motion.div>
-                ))}
+                <StatCard
+                  number="2,200+"
+                  label="Kilograms Moved"
+                  description="Mission-critical payloads delivered"
+                />
+                <StatCard
+                  number="250+"
+                  label="Trips Completed"
+                  description="Successful deliveries across SoCal"
+                />
+                <StatCard
+                  number="15+"
+                  label="Happy Clients"
+                  description="From automotive to manufacturing"
+                />
+                <StatCard
+                  number="25,000+"
+                  label="Miles Driven"
+                  description="Optimized routes across the region"
+                />
               </div>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* PAYLOADS */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
-        <motion.h2 
-          className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          Move Payloads
-        </motion.h2>
-        <motion.p 
-          className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.
-        </motion.p>
-        <motion.div 
-          className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          viewport={{ once: true }}
-        >
-          <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {[
-                { src: "/payloads/brake.webp", gradientType: "top", mobileGradientType: "top" },
-                { src: "/payloads/wheel.webp", gradientType: "top", mobileGradientType: "top" },
-                { src: "/payloads/tire.webp", gradientType: "top", mobileGradientType: "middle" },
-                { src: "/payloads/coilover.webp", gradientType: "bottom", mobileGradientType: "middle" },
-                { src: "/payloads/turbo.webp", gradientType: "bottom", mobileGradientType: "bottom" },
-                { src: "/payloads/bumper.webp", gradientType: "bottom", mobileGradientType: "bottom" }
-              ].map((payload, index) => (
-                <motion.div
-                  key={payload.src}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5, scale: 1.02 }}
-                >
-                  <PayloadCard
-                    src={payload.src}
-                    gradientType={payload.gradientType}
-                    mobileGradientType={payload.mobileGradientType}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
       </section>
 
       {/* ENTERPRISE */}
@@ -317,19 +224,19 @@ export default function HomePage() {
               <div className="grid md:grid-cols-2 gap-8">
                 {[
                   {
-                    title: "Dedicated Fleet",
-                    description: "Reserved vehicles and drivers for your exclusive use, ensuring consistent availability and reliability."
+                    title: "Dedicated Team",
+                    description: "Dedicated account managers and drivers for your exclusive use, ensuring consistent availability and reliability."
                   },
                   {
                     title: "Priority Service",
                     description: "24/7 dedicated account management and priority routing for mission-critical deliveries."
                   },
                   {
-                    title: "Custom Integration",
-                    description: "API access and custom integrations with your existing logistics and inventory systems."
+                    title: "Token-based Payments",
+                    description: "Take advantage of our token-based payment system to manage your operations more efficiently."
                   },
                   {
-                    title: "Volume Discounts",
+                    title: "Custom Solutions",
                     description: "Competitive pricing for high-volume operations with guaranteed capacity and service levels."
                   }
                 ].map((feature, index) => (
@@ -338,15 +245,15 @@ export default function HomePage() {
                     className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                     initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
+                    transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
                   viewport={{ once: true }}
                     whileHover={{ y: -5, scale: 1.02 }}
-                >
+                  >
                     <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg font-sans">{feature.title}</h3>
                     <p className="text-gray-200 drop-shadow-lg font-sans">{feature.description}</p>
                   </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
               <div className="mt-8">
                 <a href="/enterprise" className="inline-block bg-lime-400 hover:bg-lime-300 text-black font-semibold px-8 py-4 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]">
                   See Enterprise Plans  →
@@ -400,10 +307,10 @@ export default function HomePage() {
                 {[
                   { title: "Base Rate", price: "$30", description: "Flat fee per delivery" },
                   { title: "Per Mile", price: "$1.25", description: "Calculated by optimized route" },
-                  { title: "Per Item", price: "$0.50 per extra lb", description: "First 50lbs are free" },
+                  { title: "Per Item", price: "$0.50 per extra lb", description: "First 50 lbs are free" },
                   { title: "Priority Delivery", price: "$100", description: "Priority routing for urgent jobs" },
                   { title: "Nights & Weekends", price: "$25", description: "For Delivery after standard hours" },
-                  { title: "Discounts", price: "Up to 25% off", description: "For jobs scheduled 24h+ in advance" }
+                  { title: "Discounts", price: "Up to 25% off", description: "For jobs scheduled in advance" }
                 ].map((card, index) => (
                   <motion.div
                     key={card.title}
@@ -427,93 +334,85 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ENTERPRISE */}
-      <section id="enterprise" className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
-        <motion.h2 
-          className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          Enterprise Logistics
-        </motion.h2>
-        <motion.p 
-          className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          Scale your operations with dedicated last-mile logistics infrastructure and priority support.
-        </motion.p>
-        <motion.div 
-          className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          viewport={{ once: true }}
-        >
-          <div 
-            className="w-full h-full p-8 md:p-12 rounded-xl relative"
-            style={{
-              background: `
-                linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
-                url('/noise.png')
-              `,
-              backgroundBlendMode: 'hard-light',
-              backgroundSize: '100% 100%, 200px 200px'
-            }}
-          >
-            <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
-              <div className="grid md:grid-cols-2 gap-8">
-                {[
-                  {
-                    title: "Dedicated Fleet",
-                    description: "Reserved vehicles and drivers for your exclusive use, ensuring consistent availability and reliability."
-                  },
-                  {
-                    title: "Priority Service",
-                    description: "24/7 dedicated account management and priority routing for mission-critical deliveries."
-                  },
-                  {
-                    title: "Custom Integration",
-                    description: "API access and custom integrations with your existing logistics and inventory systems."
-                  },
-                  {
-                    title: "Volume Discounts",
-                    description: "Competitive pricing for high-volume operations with guaranteed capacity and service levels."
-                  }
-                ].map((feature, index) => (
-                  <motion.div
-                    key={feature.title}
-                    className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                    viewport={{ once: true }}
-                    whileHover={{ y: -5, scale: 1.02 }}
-                  >
-                    <h3 className="text-2xl font-semibold mb-4 text-white drop-shadow-lg font-sans">{feature.title}</h3>
-                    <p className="text-gray-200 drop-shadow-lg font-sans">{feature.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="mt-8">
-                <a href="/enterprise" className="inline-block bg-lime-400 hover:bg-lime-300 text-black font-semibold px-8 py-4 rounded-lg text-lg transition drop-shadow-xl border-2 border-transparent hover:border-lime-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]">
-                  See Enterprise Plans  →
-                </a>
-              </div>
+
+
+      {/* PAYLOADS */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
+        <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.</p>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto text-center relative z-10 font-sans">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <PayloadCard
+                src="/payloads/brake.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/wheel.webp"
+                gradientType="top"
+                mobileGradientType="top"
+              />
+              <PayloadCard
+                src="/payloads/tire.webp"
+                gradientType="top"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/coilover.webp"
+                gradientType="bottom"
+                mobileGradientType="middle"
+              />
+              <PayloadCard
+                src="/payloads/turbo.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
+              <PayloadCard
+                src="/payloads/bumper.webp"
+                gradientType="bottom"
+                mobileGradientType="bottom"
+              />
             </div>
           </div>
-        </motion.div>
+        </div>
+      </section>
+
+
+      {/* WHAT IS GANBATTEPM */}
+      <section className="font-sans flex flex-col justify-center px-6 py-8 min-h-screen">
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">What is GanbattePM?</h2>
+        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
+          <div
+            className="w-full h-full p-8 md:p-12 rounded-xl relative text-center"
+            style={{
+              background: `linear-gradient(to bottom, #ffed00, #e10600, #002f6c), url('/noise.png')`,
+              backgroundBlendMode: 'hard-light',
+              backgroundSize: '100% 100%, 200px 200px',
+            }}
+          >
+            <p className="text-lg md:text-xl text-gray-100 mb-4 font-sans drop-shadow-lg">
+              GanbattePM is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
+            </p>
+            <p className="text-lg md:text-xl text-gray-100 mb-4 font-sans drop-shadow-lg">
+              We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers and handlers behind the wheel.
+            </p>
+            <p className="text-lg md:text-xl text-gray-100 mb-4 font-sans drop-shadow-lg">
+              Ensuring your critical operations never stop.
+            </p>
+            <p className="text-lg md:text-xl text-gray-200 font-sans drop-shadow-lg mt-6">
+              Ganbatte <span className="inline-block align-middle">(頑張って)</span> means do your best.
+            </p>
+            <img src="/no1.webp" alt="No.1 Hand" className="absolute right-4 bottom-4 w-28 h-28 md:w-36 md:h-36 drop-shadow-2xl pointer-events-none select-none" style={{zIndex:2}} />
+          </div>
+        </div>
       </section>
 
       {/* FOOTER */}
-      <section className=" flex flex-col justify-center items-center px-6 py-8 text-center">
+      <section className=" flex flex-col justify-center items-center mt-12 px-6 py-8 text-center">
         <div className="w-full max-w-3xl mx-auto">
           {/* Logo Row */}
-          <div className="flex justify-center items-center mb-8">
+          <div className="flex justify-center items-center mb-12">
             <Image
               src="/gradient_box_logo_4.webp"
               alt="Ganbatte Box Logo"
@@ -569,24 +468,11 @@ export default function HomePage() {
   )
 }
 
-function Feature({ title, desc, icon: Icon, }: {
-  title: string; desc: string; icon: React.ElementType
-}) {
-  return (
-    <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-      <Icon className="w-8 h-8 text-white mb-4 drop-shadow-lg" />
-
-      <h3 className="text-2xl font-sans font-bold mb-3 text-white drop-shadow-lg">{title}</h3>
-      <p className="text-lg text-gray-100 drop-shadow-lg">{desc}</p>
-    </div>
-  )
-}
-
 function PriceCard({ title, price, description }: { title: string, price: string, description: string }) {
   return (
     <div className="bg-black/80 backdrop-blur-sm border border-white/20 p-6 rounded-lg text-left hover:bg-black/65 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
       <h3 className="text-xl font-semibold mb-2 text-white drop-shadow-lg font-sans">{title}</h3>
-      <p className="text-3xl font-bold text-white drop-shadow-2xl font-sans">{price}</p>
+      <p className="text-2xl font-bold text-white drop-shadow-2xl font-sans">{price}</p>
       <p className="text-sm text-gray-200 mt-2 drop-shadow-lg font-sans">{description}</p>
     </div>
   )

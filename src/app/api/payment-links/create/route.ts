@@ -60,6 +60,22 @@ export async function POST(request: NextRequest) {
       unit_amount: Math.round(amount * 100), // Convert to cents
     })
 
+    // Prepare metadata for payment link
+    const paymentLinkMetadata = {
+      ...metadata,
+      job_id: jobId,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+    }
+
+    console.log('🔍 Creating payment link with metadata:', paymentLinkMetadata)
+
+    // Get the correct production URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://ganbatte-dbls5do03-tdombuis-projects.vercel.app'
+    const successUrl = `${baseUrl}/job/${jobId}?payment=success`
+
+    console.log('🔍 Success URL:', successUrl)
+
     // Create Stripe payment link
     const paymentLink = await stripe.paymentLinks.create({
       line_items: [
@@ -70,15 +86,14 @@ export async function POST(request: NextRequest) {
       ],
       after_completion: { 
         type: 'redirect', 
-        redirect: { url: `https://ganbatte-liart.vercel.app/job/${jobId}?payment=success` } 
+        redirect: { url: successUrl } 
       },
-      metadata: {
-        ...metadata,
-        job_id: jobId,
-        created_by: user.id,
-        created_at: new Date().toISOString(),
-      },
+      metadata: paymentLinkMetadata,
     })
+
+    console.log('✅ Created payment link:', paymentLink.id)
+    console.log('✅ Payment link metadata:', paymentLink.metadata)
+    console.log('✅ Payment link URL:', paymentLink.url)
 
     // Update job with payment link information if jobId is provided
     if (jobId) {
@@ -93,6 +108,8 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Error updating job with payment link:', updateError)
+      } else {
+        console.log('✅ Updated job with payment link ID:', paymentLink.id)
       }
     }
 
@@ -101,6 +118,7 @@ export async function POST(request: NextRequest) {
       paymentLink: {
         url: paymentLink.url,
         id: paymentLink.id,
+        metadata: paymentLink.metadata
       },
     })
 
