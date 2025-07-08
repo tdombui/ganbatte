@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
+export async function GET() {
+    return NextResponse.json({
+        success: true,
+        message: 'Debug webhook processing endpoint is accessible',
+        instructions: 'Use POST method with jobId, paymentIntentId, and paymentLinkId in the body to test webhook processing',
+        example: {
+            method: 'POST',
+            body: {
+                jobId: 'your-job-id-here',
+                paymentIntentId: 'pi_test_123',
+                paymentLinkId: 'your-payment-link-id'
+            }
+        }
+    })
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
