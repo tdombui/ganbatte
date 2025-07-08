@@ -28,4 +28,9 @@ export interface ParsedJob {
     deadlineDisplay?: string
     status?: string
     photo_urls?: string[]
+    payment_status?: string
+    payment_amount?: number
+    stripe_payment_intent_id?: string
+    stripe_payment_link_id?: string
+    paid_at?: string
 }

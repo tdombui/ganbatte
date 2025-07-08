@@ -1,12 +1,13 @@
 'use client'
 
 import { ChangeEvent, useRef, useState } from 'react'
-import { Camera, Upload, X, FileText } from 'lucide-react'
+import { Camera, Upload, X, FileText, Receipt, CreditCard } from 'lucide-react'
 
 interface Job {
     id: string;
     status?: string;
     photo_urls?: string[];
+    payment_status?: string;
 }
 
 export interface CustomerActionsProps {
@@ -14,9 +15,22 @@ export interface CustomerActionsProps {
     uploading?: boolean;
     onFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
     onDeletePhoto: (url: string) => void;
+    onCreateInvoice?: () => void;
+    invoiceLoading?: boolean;
+    onMakePayment?: () => void;
+    paymentLoading?: boolean;
 }
 
-export default function CustomerActions({ job, uploading, onFileUpload, onDeletePhoto }: CustomerActionsProps) {
+export default function CustomerActions({ 
+    job, 
+    uploading, 
+    onFileUpload, 
+    onDeletePhoto, 
+    onCreateInvoice, 
+    invoiceLoading,
+    onMakePayment,
+    paymentLoading 
+}: CustomerActionsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
     const [uploadProgress, setUploadProgress] = useState<string>('')
@@ -74,7 +88,41 @@ export default function CustomerActions({ job, uploading, onFileUpload, onDelete
 
     return (
         <div className="space-y-6 bg-neutral-800/70 p-6 rounded-xl text-white mt-6">
-            <h2 className="text-2xl font-bold">Job Files</h2>
+            <h2 className="text-2xl font-bold">Job Actions</h2>
+            
+            {/* Payment Section */}
+            <div>
+                <label className="block font-semibold mb-2">Payment Options</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {job.payment_status !== 'paid' ? (
+                        <button
+                            onClick={onMakePayment}
+                            disabled={paymentLoading}
+                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white font-semibold py-2 px-4 rounded transition-colors"
+                        >
+                            <CreditCard size={18} />
+                            {paymentLoading ? 'Processing...' : 'Make Payment'}
+                        </button>
+                    ) : (
+                        <div className="flex items-center justify-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded">
+                            <CreditCard size={18} />
+                            Payment Completed
+                        </div>
+                    )}
+                    
+                    <button
+                        onClick={onCreateInvoice}
+                        disabled={invoiceLoading}
+                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold py-2 px-4 rounded transition-colors"
+                    >
+                        <Receipt size={18} />
+                        {invoiceLoading ? 'Creating Invoice...' : 'Create Invoice'}
+                    </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                    {job.payment_status === 'paid' ? 'Payment completed - invoice available for records' : 'Quick payment or detailed invoice'}
+                </p>
+            </div>
             
             <div>
                 <label className="block font-semibold mb-2">Upload Files</label>

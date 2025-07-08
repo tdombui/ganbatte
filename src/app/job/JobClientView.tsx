@@ -33,6 +33,8 @@ function isMultiLegJob(job: JobType): job is MultiLegJob {
 export default function JobClientView({ job: initialJob }: { job: JobType }) {
     const [job, setJob] = useState(initialJob)
     const [uploading, setUploading] = useState(false)
+    const [invoiceLoading, setInvoiceLoading] = useState(false)
+    const [paymentLoading, setPaymentLoading] = useState(false)
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -149,6 +151,101 @@ export default function JobClientView({ job: initialJob }: { job: JobType }) {
         }
     }
 
+    const handleCreateInvoice = async () => {
+        setInvoiceLoading(true)
+        try {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            
+            if (!session?.access_token) {
+                alert('No session token available. Please refresh the page and try again.')
+                return
+            }
+
+            // Calculate amount based on job details (you can customize this logic)
+            const baseAmount = 30 // Base rate
+            const distanceMultiplier = ('distance_meters' in job && job.distance_meters) ? (job.distance_meters as number) / 1000 * 1.25 : 0 // $1.25 per mile
+            const partsMultiplier = job.parts ? job.parts.length * 5 : 0 // $5 per part
+            const amount = baseAmount + distanceMultiplier + partsMultiplier
+
+            const res = await fetch('/api/invoices/create', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    jobId: job.id,
+                    amount: amount,
+                    currency: 'USD',
+                    notes: `Invoice for job ${job.id}`
+                }),
+            })
+
+            if (res.ok) {
+                alert('Invoice created and sent successfully!')
+                // Optionally redirect to invoice page
+                // window.location.href = `/invoice/${data.invoice.id}`
+            } else {
+                const errorData = await res.json()
+                alert('Failed to create invoice: ' + (errorData.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('Error creating invoice:', error)
+            alert('Error creating invoice. Please try again.')
+        } finally {
+            setInvoiceLoading(false)
+        }
+    }
+
+    const handleMakePayment = async () => {
+        setPaymentLoading(true)
+        try {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            
+            if (!session?.access_token) {
+                alert('No session token available. Please refresh the page and try again.')
+                return
+            }
+
+            // Calculate amount based on job details
+            const baseAmount = 30 // Base rate
+            const distanceMultiplier = ('distance_meters' in job && job.distance_meters) ? (job.distance_meters as number) / 1000 * 1.25 : 0 // $1.25 per mile
+            const partsMultiplier = job.parts ? job.parts.length * 5 : 0 // $5 per part
+            const amount = baseAmount + distanceMultiplier + partsMultiplier
+
+            // Create payment link
+            const res = await fetch('/api/payment-links/create', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    description: `Job ${job.id} - Delivery Service`,
+                    jobId: job.id,
+                    metadata: { jobId: job.id, type: 'one_time_payment' }
+                }),
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                // Redirect to Stripe payment link
+                window.location.href = data.paymentLink.url
+            } else {
+                const errorData = await res.json()
+                alert('Failed to create payment link: ' + (errorData.error || 'Unknown error'))
+            }
+        } catch (error) {
+            console.error('Error creating payment link:', error)
+            alert('Error creating payment link. Please try again.')
+        } finally {
+            setPaymentLoading(false)
+        }
+    }
+
     if (isMultiLegJob(job)) {
         return (
             <>
@@ -160,6 +257,10 @@ export default function JobClientView({ job: initialJob }: { job: JobType }) {
                         uploading={uploading}
                         onFileUpload={handleFileUpload}
                         onDeletePhoto={handleDeletePhoto}
+                        onCreateInvoice={handleCreateInvoice}
+                        invoiceLoading={invoiceLoading}
+                        onMakePayment={handleMakePayment}
+                        paymentLoading={paymentLoading}
                     />
                 </div>
             </>
@@ -175,6 +276,10 @@ export default function JobClientView({ job: initialJob }: { job: JobType }) {
                         uploading={uploading}
                         onFileUpload={handleFileUpload}
                         onDeletePhoto={handleDeletePhoto}
+                        onCreateInvoice={handleCreateInvoice}
+                        invoiceLoading={invoiceLoading}
+                        onMakePayment={handleMakePayment}
+                        paymentLoading={paymentLoading}
                     />
                 </div>
             </>

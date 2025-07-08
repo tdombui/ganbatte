@@ -189,7 +189,7 @@ export default function DemoPage() {
                 <strong>Phone:</strong> <a href="tel:1-877-684-5729" className="text-emerald-400 hover:text-emerald-300 underline">1(877) 684-5729</a>
               </div>
               <div>
-                <strong>Email:</strong> <a href="mailto:team@ganbatte.run" className="text-emerald-400 hover:text-emerald-300 underline">team@ganbatte.run</a>
+                <strong>Email:</strong> <a href="mailto:support@ganbattepm.com" className="text-emerald-400 hover:text-emerald-300 underline">support@ganbattepm.com</a>
               </div>
               <div>
                 <strong>Service Area:</strong> Southern California

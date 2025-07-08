@@ -101,7 +101,7 @@ export default function TermsOfService() {
                                 <h3 className="text-xl font-semibold mb-3">9. Contact Us</h3>
                                 <p className="text-gray-300 mb-3">If you have any questions or concerns about these Terms, you may contact us via:</p>
                                 <ul className="list-disc list-inside text-gray-300 mb-6 space-y-1">
-                                    <li><strong>Email:</strong> team@ganbatte.run</li>
+                                    <li><strong>Email:</strong> team@ganbattepm.com</li>
                                     <li><strong>Contact Form:</strong> Available through our platform</li>
                                 </ul>
 

@@ -3,7 +3,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase/client'
 import { useAuthContext } from '../../providers'
 import JobClientView from '../JobClientView'
@@ -12,14 +12,26 @@ import AuthModal from '@/app/components/auth/AuthModal'
 
 export default function JobPage() {
     const params = useParams()
+    const searchParams = useSearchParams()
     const { loading: authLoading, isAuthenticated } = useAuthContext()
     const [job, setJob] = useState<ParsedJob | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [showAuthModal, setShowAuthModal] = useState(false)
+    const [showPaymentSuccess, setShowPaymentSuccess] = useState(false)
 
     useEffect(() => {
         console.log('useEffect triggered:', { authLoading, isAuthenticated, slug: params.slug })
+        
+        // Check for payment success parameter
+        const paymentSuccess = searchParams.get('payment') === 'success'
+        if (paymentSuccess) {
+            setShowPaymentSuccess(true)
+            // Clear the URL parameter
+            window.history.replaceState({}, '', window.location.pathname)
+            // Hide success message after 5 seconds
+            setTimeout(() => setShowPaymentSuccess(false), 5000)
+        }
         
         if (authLoading) {
             console.log('Still loading auth, returning...')
@@ -125,5 +137,17 @@ export default function JobPage() {
         )
     }
 
-    return <JobClientView job={job} />
+    return (
+        <>
+            {showPaymentSuccess && (
+                <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <span>✅</span>
+                        <span>Payment successful! Your job has been updated.</span>
+                    </div>
+                </div>
+            )}
+            <JobClientView job={job} />
+        </>
+    )
 }

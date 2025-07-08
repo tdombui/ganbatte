@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
 
         if (error) {
             console.error('❌ Error fetching job:', error)
+            console.error('❌ Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            })
             return NextResponse.json({ error: 'Failed to fetch job' }, { status: 500 })
         }
 
@@ -41,6 +47,9 @@ export async function GET(request: NextRequest) {
         }
 
         console.log('✅ Found job:', job.id)
+        console.log('🔍 Job data structure:', Object.keys(job))
+        console.log('🔍 Payment status:', job.payment_status)
+        console.log('🔍 Full job data:', JSON.stringify(job, null, 2))
         return NextResponse.json({ job })
 
     } catch (error) {
