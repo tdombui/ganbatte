@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { stripeConfig } from '@/lib/stripe-config'
 import Stripe from 'stripe'
 
-// Use test key if available, otherwise fall back to live key
-const stripeSecretKey = process.env.STRIPE_SECRET_TEST_KEY || process.env.STRIPE_SECRET_KEY
-if (!stripeSecretKey) {
-  throw new Error('Neither STRIPE_SECRET_TEST_KEY nor STRIPE_SECRET_KEY is set')
-}
-
-const stripe = new Stripe(stripeSecretKey, {
+const stripe = new Stripe(stripeConfig.secretKey, {
   apiVersion: '2025-05-28.basil',
   typescript: true,
 })
 
 // Debug: Check which key we're using (safe to log first few characters)
-console.log('🔍 Using Stripe key type:', stripeSecretKey.startsWith('sk_test_') ? 'TEST' : 'LIVE')
-console.log('🔍 Key starts with:', stripeSecretKey.substring(0, 10) + '...')
+console.log('🔍 Using Stripe key type:', stripeConfig.secretKey.startsWith('sk_test_') ? 'TEST' : 'LIVE')
+console.log('🔍 Key starts with:', stripeConfig.secretKey.substring(0, 10) + '...')
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,8 +66,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Creating payment link with metadata:', paymentLinkMetadata)
 
     // Get the correct production URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://ganbatte-dbls5do03-tdombuis-projects.vercel.app'
-    const successUrl = `${baseUrl}/job/${jobId}?payment=success`
+    const successUrl = `${stripeConfig.baseUrl}/job/${jobId}?payment=success`
 
     console.log('🔍 Success URL:', successUrl)
 
