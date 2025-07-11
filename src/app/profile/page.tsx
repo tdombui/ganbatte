@@ -5,6 +5,7 @@ import { useAuthContext } from '../providers'
 import { useRouter } from 'next/navigation'
 import { updateProfile, updateCustomerProfile } from '../../lib/auth-utils'
 import SmartNavbar from '../components/nav/SmartNavbar'
+
 import { User, Mail, Phone, Building, Shield, Save, ArrowLeft } from 'lucide-react'
 import { createClient } from '../../lib/supabase/client'
 

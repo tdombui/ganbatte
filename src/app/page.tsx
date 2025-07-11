@@ -140,11 +140,11 @@ export default function HomePage() {
       <section className="font-sans min-h-screen flex flex-col justify-center px-6 py-8">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center">Our Spec Sheet</h2>
         <p className="text-gray-100 drop-shadow-lg max-w-3xl mx-auto mb-8 text-center">
-          Trusted by leading automotive shops, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
+          Trusted by leading automotive, marine, and manufacturing companies throughout Southern California. Every payload counts when operations can&apos;t stop.
         </p>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto p-2 md:p-8 rounded-xl relative overflow-hidden">
           <div 
-            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            className="w-full h-full p-4 md:p-12 rounded-xl relative"
             style={{
               background: `
                 linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
@@ -203,14 +203,14 @@ export default function HomePage() {
           Scale your operations with dedicated last-mile logistics infrastructure and priority support.
         </motion.p>
         <motion.div 
-          className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden"
+          className="w-full max-w-6xl mx-auto p-2 md:p-8 rounded-xl relative overflow-hidden"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           viewport={{ once: true }}
         >
           <div 
-            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            className="w-full h-full p-4 md:p-12 rounded-xl relative"
             style={{
               background: `
                 linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
@@ -285,14 +285,14 @@ export default function HomePage() {
           Built for mission-critical, speciality jobs. No hidden fees, no surprises.
         </motion.p>
         <motion.div 
-          className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden"
+          className="w-full max-w-6xl mx-auto p-2 md:p-8 rounded-xl relative overflow-hidden"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           viewport={{ once: true }}
         >
           <div 
-            className="w-full h-full p-8 md:p-12 rounded-xl relative"
+            className="w-full h-full p-4 md:p-12 rounded-xl relative"
             style={{
               background: `
                 linear-gradient(to bottom, #ffed00, #e10600, #002f6c),
@@ -337,7 +337,7 @@ export default function HomePage() {
 
 
       {/* PAYLOADS */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
+      <section id="services" className="min-h-screen flex flex-col items-center justify-center px-6 py-8 font-sans">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-4 text-center">Move Payloads</h2>
         <p className="text-gray-100 mb-8 drop-shadow-lg text-center max-w-2xl">From brake kits to bolt-on turbos and wheelsets, we move the parts that keep your projects in motion.</p>
         <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden bg-black/80 backdrop-blur-sm">
@@ -382,9 +382,9 @@ export default function HomePage() {
       {/* WHAT IS GANBATTEPM */}
       <section className="font-sans flex flex-col justify-center px-6 py-8 min-h-screen">
         <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">What is GanbattePM?</h2>
-        <div className="w-full max-w-6xl mx-auto p-8 md:p-2 rounded-xl relative overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto p-2 md:p-8 rounded-xl relative overflow-hidden">
           <div
-            className="w-full h-full p-8 md:p-12 rounded-xl relative text-center"
+            className="w-full h-full p-4 md:p-12 rounded-xl relative text-center"
             style={{
               background: `linear-gradient(to bottom, #ffed00, #e10600, #002f6c), url('/noise.png')`,
               backgroundBlendMode: 'hard-light',
@@ -403,8 +403,18 @@ export default function HomePage() {
             <p className="text-lg md:text-xl text-gray-200 font-sans drop-shadow-lg mt-6">
               Ganbatte <span className="inline-block align-middle">(頑張って)</span> means do your best.
             </p>
-            <img src="/no1.webp" alt="No.1 Hand" className="absolute right-4 bottom-4 w-28 h-28 md:w-36 md:h-36 drop-shadow-2xl pointer-events-none select-none" style={{zIndex:2}} />
           </div>
+        </div>
+        <div className="flex justify-end mt-4 lg:mt-[-8rem] pr-4 md:pr-8">
+          <Image 
+            src="/no1.webp" 
+            alt="No.1 Hand" 
+            width={144}
+            height={144}
+            className="w-38 h-38 md:w-36 md:h-36 drop-shadow-2xl" 
+            priority
+            unoptimized
+          />
         </div>
       </section>
 
@@ -418,7 +428,7 @@ export default function HomePage() {
               alt="Ganbatte Box Logo"
               width={600}
               height={180}
-              className="rounded-md w-full max-w-2xl h-auto object-cover drop-shadow-2xl "
+              className="rounded-sm w-full max-w-2xl h-auto object-cover drop-shadow-2xl "
               priority
               unoptimized
               quality={100}
@@ -441,6 +451,7 @@ export default function HomePage() {
                 <a href="mailto:support@ganbattepm.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">Help Center</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">FAQ</a>
+                <a href="/shop/sticker" className="block text-lime-400 hover:text-white transition-colors font-sans">Buy a Bumper Sticker</a>
               </div>
             </div>
           
@@ -448,18 +459,19 @@ export default function HomePage() {
             <div className="space-y-4 font-sans">
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Company</h3>
               <div className="space-y-2">
-                <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
+                <a href="/about" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
                 <a href="https://www.instagram.com/ganbattepm" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
                 <a href="/privacy" className="block text-lime-400 hover:text-white transition-colors font-sans">Privacy Policy</a>
                 <a href="/terms" className="block text-lime-400 hover:text-white transition-colors font-sans">Terms of Service</a>
+                <a href="/driver" className="block text-lime-400 hover:text-white transition-colors font-sans">Join the Team</a>
               </div>
             </div>
           </div>
           
           {/* Copyright */}
-          <div className=" border-gray-700 pt-4">
+          <div className=" border-gray-700 pt-[10rem]">
             <p className="text-sm text-lime-400 font-sans">
-              &copy; {new Date().getFullYear()} — Ganbatte, All Rights Reserved
+              &copy; {new Date().getFullYear()} GanbattePM, All Rights Reserved
             </p>
           </div>
         </div>

@@ -1,0 +1,85 @@
+-- Clean tokens system migration - only adds what's missing
+
+-- Create enterprise subscriptions table (if not exists)
+CREATE TABLE IF NOT EXISTS enterprise_subscriptions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE NOT NULL,
+    stripe_subscription_id VARCHAR(255) UNIQUE,
+    stripe_customer_id VARCHAR(255),
+    plan_name VARCHAR(100) NOT NULL,
+    monthly_amount DECIMAL(10,2) NOT NULL,
+    tokens_per_month INTEGER NOT NULL,
+    miles_per_token INTEGER NOT NULL DEFAULT 100,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'past_due', 'unpaid')),
+    current_period_start TIMESTAMP WITH TIME ZONE,
+    current_period_end TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create tokens table (if not exists)
+CREATE TABLE IF NOT EXISTS tokens (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    subscription_id UUID REFERENCES enterprise_subscriptions(id) ON DELETE CASCADE NOT NULL,
+    job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+    tokens_used INTEGER NOT NULL DEFAULT 1,
+    miles_covered INTEGER NOT NULL,
+    description TEXT,
+    used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes (if not exist)
+CREATE INDEX IF NOT EXISTS idx_enterprise_subscriptions_customer_id ON enterprise_subscriptions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_enterprise_subscriptions_stripe_subscription_id ON enterprise_subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_tokens_subscription_id ON tokens(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_tokens_job_id ON tokens(job_id);
+
+-- Enable RLS (safe to run multiple times)
+ALTER TABLE enterprise_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tokens ENABLE ROW LEVEL SECURITY;
+
+-- Create functions (will replace if they exist)
+CREATE OR REPLACE FUNCTION calculate_tokens_for_job(job_distance_meters INTEGER)
+RETURNS INTEGER AS $$
+BEGIN
+    -- Convert meters to miles and calculate tokens needed
+    -- 1 token = 100 miles, round up
+    RETURN CEIL(job_distance_meters::DECIMAL / 160934.4 / 100);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION check_token_availability(customer_uuid UUID, tokens_needed INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+    available_tokens INTEGER;
+    used_tokens INTEGER;
+BEGIN
+    -- Get total tokens from active subscription
+    SELECT tokens_per_month INTO available_tokens
+    FROM enterprise_subscriptions
+    WHERE customer_id = customer_uuid AND status = 'active'
+    ORDER BY created_at DESC
+    LIMIT 1;
+    
+    IF available_tokens IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Get used tokens for current month
+    SELECT COALESCE(SUM(tokens_used), 0) INTO used_tokens
+    FROM tokens t
+    JOIN enterprise_subscriptions es ON t.subscription_id = es.id
+    WHERE es.customer_id = customer_uuid 
+    AND es.status = 'active'
+    AND t.used_at >= DATE_TRUNC('month', NOW());
+    
+    RETURN (available_tokens - used_tokens) >= tokens_needed;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger (will replace if it exists)
+DROP TRIGGER IF EXISTS update_enterprise_subscriptions_updated_at ON enterprise_subscriptions;
+CREATE TRIGGER update_enterprise_subscriptions_updated_at
+    BEFORE UPDATE ON enterprise_subscriptions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 

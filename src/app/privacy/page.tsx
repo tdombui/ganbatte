@@ -1,7 +1,12 @@
+'use client'
+
+import UnifiedNavbar from '../components/nav/UnifiedNavbar'
+
 export default function PrivacyPage() {
     return (
         <div className="min-h-screen bg-neutral-950 text-white">
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <UnifiedNavbar />
+            <div className="max-w-4xl mx-auto px-4 py-8 mt-16">
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold mb-4">Privacy Policy for Ganbatte</h1>
                     <p className="text-gray-300 text-lg">
@@ -195,14 +200,8 @@ export default function PrivacyPage() {
 
                     <section className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">10. Contact Us</h2>
-                        <p className="text-gray-300 mb-3">For privacy-related inquiries, please reach out via:</p>
-                        <ul className="list-disc list-inside text-gray-300 mb-6 space-y-2 ml-4">
-                            <li><strong>Privacy Email:</strong> privacy@ganbattepm.com</li>
-                            <li><strong>General Support:</strong> support@ganbattepm.com</li>
-                            <li><strong>Data Protection Officer:</strong> privacy@ganbattepm.com</li>
-                            <li><strong>California Privacy Requests:</strong> privacy@ganbattepm.com</li>
-                            <li><strong>EU Privacy Requests:</strong> privacy@ganbattepm.com</li>
-                        </ul>
+                        <p className="text-gray-300 mb-3">For privacy-related inquiries regarding Data Protection, California Privacy, or General Support, please reach out to support@ganbattepm.com.</p>
+
                         <p className="text-gray-300 mb-4">
                             <strong>Response Time:</strong> We will respond to privacy requests within 30 days, or 45 days if additional time is needed.
                         </p>

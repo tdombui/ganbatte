@@ -46,6 +46,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount and description are required' }, { status: 400 })
     }
 
+    // Determine success URL based on product type
+    let successUrl = `${stripeConfig.baseUrl}/payment-success`
+    
+    if (jobId) {
+      // Job payment - redirect to job page
+      successUrl = `${stripeConfig.baseUrl}/job/${jobId}?payment=success`
+    } else if (metadata.product === 'bumper_sticker') {
+      // Sticker product - redirect to sticker success page
+      successUrl = `${stripeConfig.baseUrl}/shop/sticker/success`
+    }
+
     // Create a one-time price for this payment
     const price = await stripe.prices.create({
       currency: 'usd',
@@ -64,9 +75,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔍 Creating payment link with metadata:', paymentLinkMetadata)
-
-    // Get the correct production URL
-    const successUrl = `${stripeConfig.baseUrl}/job/${jobId}?payment=success`
 
     console.log('🔍 Success URL:', successUrl)
 

@@ -219,6 +219,11 @@ export default function UnifiedNavbar() {
                     {/* Only show nav links for customers and non-authenticated users */}
                     {(!isAuthenticated || isCustomer) && (
                         <>
+                                                    <li>
+                                <a href="#enterprise" className="transition-colors duration-300 p-2 hover:text-white hover:bg-white/10 rounded-md">
+                                    Enterprise
+                                </a>
+                            </li>
                             <li>
                                 <a href="#pricing" className="transition-colors duration-300 p-2 hover:text-white hover:bg-white/10 rounded-md">
                                     Pricing
@@ -229,11 +234,7 @@ export default function UnifiedNavbar() {
                                     Services
                                 </a>
                             </li>
-                            <li>
-                                <a href="#enterprise" className="transition-colors duration-300 p-2 hover:text-white hover:bg-white/10 rounded-md">
-                                    Enterprise
-                                </a>
-                            </li>
+
                         </>
                     )}
                 </ul>

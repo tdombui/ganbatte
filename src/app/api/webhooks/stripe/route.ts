@@ -3,6 +3,20 @@ import { constructWebhookEvent } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import Stripe from 'stripe'
 
+// Helper function to get plan details
+function getPlanDetails(planName: string): { monthlyAmount: number; tokensPerMonth: number } {
+  switch (planName) {
+    case 'GT Starter':
+      return { monthlyAmount: 600.00, tokensPerMonth: 6 }
+    case 'GT Pro':
+      return { monthlyAmount: 1200.00, tokensPerMonth: 13 }
+    case 'GT Ultra':
+      return { monthlyAmount: 2000.00, tokensPerMonth: 22 }
+    default:
+      throw new Error('Invalid plan name')
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
@@ -66,20 +80,53 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   if (userId && planName) {
     console.log('🔔 Processing Enterprise Subscription payment')
     
-    // Update enterprise subscription status
-    const { error: updateError } = await supabaseAdmin
+    // Get plan details
+    const planDetails = getPlanDetails(planName)
+    
+    // Check if subscription record already exists
+    const { data: existingSubscription } = await supabaseAdmin
       .from('enterprise_subscriptions')
-      .update({
-        status: 'active',
-        stripe_subscription_id: session.subscription as string,
-        stripe_customer_id: session.customer as string,
-      })
+      .select('id')
       .eq('customer_id', userId)
+      .eq('plan_name', planName)
+      .single()
 
-    if (updateError) {
-      console.error('Error updating enterprise subscription:', updateError)
+    if (existingSubscription) {
+      // Update existing subscription
+      const { error: updateError } = await supabaseAdmin
+        .from('enterprise_subscriptions')
+        .update({
+          status: 'active',
+          stripe_subscription_id: session.subscription as string,
+          stripe_customer_id: session.customer as string,
+        })
+        .eq('id', existingSubscription.id)
+
+      if (updateError) {
+        console.error('Error updating enterprise subscription:', updateError)
+      } else {
+        console.log('✅ Successfully updated enterprise subscription for user:', userId)
+      }
     } else {
-      console.log('✅ Successfully updated enterprise subscription for user:', userId)
+      // Create new subscription record
+      const { error: createError } = await supabaseAdmin
+        .from('enterprise_subscriptions')
+        .insert({
+          customer_id: userId,
+          plan_name: planName,
+          monthly_amount: planDetails.monthlyAmount,
+          tokens_per_month: planDetails.tokensPerMonth,
+          miles_per_token: 100,
+          status: 'active',
+          stripe_subscription_id: session.subscription as string,
+          stripe_customer_id: session.customer as string,
+        })
+
+      if (createError) {
+        console.error('Error creating enterprise subscription:', createError)
+      } else {
+        console.log('✅ Successfully created enterprise subscription for user:', userId)
+      }
     }
   }
   
@@ -182,20 +229,53 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   if (userId && planName) {
     console.log('🔔 Processing Enterprise Subscription payment intent')
     
-    // Update enterprise subscription status
-    const { error: updateError } = await supabaseAdmin
+    // Get plan details
+    const planDetails = getPlanDetails(planName)
+    
+    // Check if subscription record already exists
+    const { data: existingSubscription } = await supabaseAdmin
       .from('enterprise_subscriptions')
-      .update({
-        status: 'active',
-        stripe_subscription_id: paymentIntent.metadata?.subscription_id,
-        stripe_customer_id: paymentIntent.metadata?.customer_id,
-      })
+      .select('id')
       .eq('customer_id', userId)
+      .eq('plan_name', planName)
+      .single()
 
-    if (updateError) {
-      console.error('Error updating enterprise subscription:', updateError)
+    if (existingSubscription) {
+      // Update existing subscription
+      const { error: updateError } = await supabaseAdmin
+        .from('enterprise_subscriptions')
+        .update({
+          status: 'active',
+          stripe_subscription_id: paymentIntent.metadata?.subscription_id,
+          stripe_customer_id: paymentIntent.metadata?.customer_id,
+        })
+        .eq('id', existingSubscription.id)
+
+      if (updateError) {
+        console.error('Error updating enterprise subscription:', updateError)
+      } else {
+        console.log('✅ Successfully updated enterprise subscription for user:', userId)
+      }
     } else {
-      console.log('✅ Successfully updated enterprise subscription for user:', userId)
+      // Create new subscription record
+      const { error: createError } = await supabaseAdmin
+        .from('enterprise_subscriptions')
+        .insert({
+          customer_id: userId,
+          plan_name: planName,
+          monthly_amount: planDetails.monthlyAmount,
+          tokens_per_month: planDetails.tokensPerMonth,
+          miles_per_token: 100,
+          status: 'active',
+          stripe_subscription_id: paymentIntent.metadata?.subscription_id,
+          stripe_customer_id: paymentIntent.metadata?.customer_id,
+        })
+
+      if (createError) {
+        console.error('Error creating enterprise subscription:', createError)
+      } else {
+        console.log('✅ Successfully created enterprise subscription for user:', userId)
+      }
     }
   }
   
