@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { OpenAI } from 'openai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,8 +62,72 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Found existing customer: ${customer.id}`);
     }
     
+    // Test OpenAI parsing
+    console.log('🔍 Testing OpenAI parsing...');
+    
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    
+    const prompt = `
+You're an assistant for a parts delivery service called Ganbatte. When a customer sends a message, your job is to extract these fields and return them as JSON only — no backticks, no markdown, no explanations.
+
+Message: ${messageBody}
+
+EXTRACTION GUIDELINES:
+- parts: Extract any items, parts, or things being delivered (e.g., "wheels", "engine parts", "documents", "michelin")
+- pickup: Extract the pickup address or location (can be coordinates like "40.7128, -74.0060" or street addresses)
+- dropoff: Extract the delivery address or location (can be coordinates like "40.7128, -74.0060" or street addresses)
+- deadline: Extract ANY time reference, including natural language like "next tuesday", "tomorrow", "by 5pm", "asap", "urgent", etc. Keep the original text as-is.
+
+Return a JSON object with:
+{
+  "parts": [],
+  "pickup": "",
+  "dropoff": "",
+  "deadline": ""
+}
+`;
+
+    console.log('🔍 SMS ParseJob: Calling OpenAI...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 300,
+    });
+
+    console.log('🔍 SMS ParseJob: OpenAI response received');
+    const content = completion.choices[0].message.content || '';
+    const cleanJson = content
+      .replace(/^```json\s*/, '')
+      .replace(/^```\s*/, '')
+      .replace(/\s*```$/, '')
+      .trim();
+
+    console.log('✅ Cleaned AI output:', cleanJson);
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanJson);
+      console.log('✅ Successfully parsed JSON:', parsed);
+    } catch (error) {
+      console.error('❌ Failed to parse AI response as JSON:', error);
+      const errorResponse = "I'm having trouble understanding your request. Could you please provide the pickup and dropoff addresses clearly?";
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${errorResponse}</Message>
+</Response>`;
+
+      return new NextResponse(twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+    
     // Simple response for testing
-    const testResponse = `Hello! I received your message: "${messageBody}". Database operations successful. Customer ID: ${customer.id}`;
+    const testResponse = `Hello! I received your message: "${messageBody}". Database operations successful. Customer ID: ${customer.id}. OpenAI parsing successful. Parsed data: ${JSON.stringify(parsed)}`;
     
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
