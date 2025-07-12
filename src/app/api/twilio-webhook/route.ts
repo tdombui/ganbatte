@@ -62,6 +62,68 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Found existing customer: ${customer.id}`);
     }
     
+    // Handle consent flow
+    if (!customer.sms_opt_in) {
+      if (messageBody.toLowerCase().trim() === 'yes') {
+        // Opt in
+        await supabaseAdmin
+          .from('twilio_customers')
+          .update({ sms_opt_in: true })
+          .eq('id', customer.id);
+        
+        const welcomeMessage = `Welcome to GanbattePM! You're now opted in for delivery services. Send me pickup and dropoff addresses to create a delivery job.`;
+        
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${welcomeMessage}</Message>
+</Response>`;
+        
+        return new NextResponse(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      } else {
+        // Ask for consent
+        const consentMessage = `Welcome to GanbattePM! Reply YES to receive delivery help via SMS. Reply STOP to opt out.`;
+        
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${consentMessage}</Message>
+</Response>`;
+        
+        return new NextResponse(twiml, {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+    }
+    
+    // Handle STOP command for opted-in customers
+    if (messageBody.toLowerCase().trim() === 'stop') {
+      await supabaseAdmin
+        .from('twilio_customers')
+        .update({ sms_opt_in: false })
+        .eq('id', customer.id);
+      
+      const stopResponse = `You've been opted out. You won't receive any more messages from us.`;
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${stopResponse}</Message>
+</Response>`;
+      
+      return new NextResponse(twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+    
+    // Update last interaction
+    await supabaseAdmin
+      .from('twilio_customers')
+      .update({ last_interaction: new Date().toISOString() })
+      .eq('id', customer.id);
+    
     // Test OpenAI parsing
     console.log('🔍 Testing OpenAI parsing...');
     
@@ -126,8 +188,85 @@ Return a JSON object with:
       });
     }
     
-    // Simple response for testing
-    const testResponse = `Hello! I received your message: "${messageBody}". Database operations successful. Customer ID: ${customer.id}. OpenAI parsing successful. Parsed data: ${JSON.stringify(parsed)}`;
+    // Check for vague addresses
+    const vagueAddressPatterns = [
+      /my shop/i,
+      /my store/i,
+      /my office/i,
+      /my house/i,
+      /my home/i,
+      /my place/i,
+      /here/i,
+      /there/i,
+      /this place/i,
+      /that place/i
+    ];
+    
+    const isVagueAddress = (address: string) => {
+      return vagueAddressPatterns.some(pattern => pattern.test(address));
+    };
+    
+    const pickupIsVague = isVagueAddress(parsed.pickup || '');
+    const dropoffIsVague = isVagueAddress(parsed.dropoff || '');
+    
+    console.log('🔍 Address vagueness check:', {
+      pickup: { address: parsed.pickup, isVague: pickupIsVague },
+      dropoff: { address: parsed.dropoff, isVague: dropoffIsVague }
+    });
+    
+    // If we have vague addresses, ask for clarification
+    if (pickupIsVague || dropoffIsVague) {
+      let clarificationMessage = "I need more specific addresses to create your delivery job. ";
+      
+      if (pickupIsVague && dropoffIsVague) {
+        clarificationMessage += "Please provide the complete pickup address and delivery address.";
+      } else if (pickupIsVague) {
+        clarificationMessage += `Please provide the complete pickup address. (Dropoff: ${parsed.dropoff})`;
+      } else {
+        clarificationMessage += `Please provide the complete delivery address. (Pickup: ${parsed.pickup})`;
+      }
+      
+      // Store partial job data for later completion
+      const partialJobData = {
+        customer_id: customer.id,
+        pickup: pickupIsVague ? '' : parsed.pickup,
+        dropoff: dropoffIsVague ? '' : parsed.dropoff,
+        parts: parsed.parts || [],
+        deadline: parsed.deadline || '',
+        status: 'pending_address',
+        created_via: 'sms',
+        needs_pickup_address: pickupIsVague,
+        needs_dropoff_address: dropoffIsVague
+      };
+      
+      // Store in database for later completion
+      const { data: partialJob, error: partialJobError } = await supabaseAdmin
+        .from('jobs')
+        .insert(partialJobData)
+        .select()
+        .single();
+      
+      if (partialJobError) {
+        console.error('❌ Error creating partial job:', partialJobError);
+        clarificationMessage = "I'm having trouble processing your request. Please try again.";
+      } else {
+        console.log(`✅ Created partial job ${partialJob.id} waiting for address clarification`);
+        clarificationMessage += `\n\nJob ID: ${partialJob.id.slice(-6)}`;
+      }
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${clarificationMessage}</Message>
+</Response>`;
+
+      return new NextResponse(twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+    
+    // Simple response for testing (when addresses are clear)
+    const testResponse = `Hello! I received your message: "${messageBody}". Database operations successful. Customer ID: ${customer.id}. OpenAI parsing successful. Parsed data: ${JSON.stringify(parsed)}. Addresses are clear and ready for job creation.`;
     
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
