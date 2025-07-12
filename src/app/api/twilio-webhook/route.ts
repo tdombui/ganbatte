@@ -1,62 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { createClient } from '@/lib/supabase/server';
+import { OpenAI } from 'openai';
 import { validateAddress } from '@/lib/validateAddress';
 import { normalizeDeadline } from '@/lib/normalizeDeadline';
-import crypto from 'crypto';
-
-// Initialize Supabase client with service role key
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Rate limiting in memory (for production, use Redis)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute per phone
-
-function checkRateLimit(phoneNumber: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(phoneNumber);
-  
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(phoneNumber, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true;
-  }
-  
-  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-  
-  record.count++;
-  return true;
-}
-
-function verifyTwilioSignature(request: NextRequest, body: string): boolean {
-  const signature = request.headers.get('x-twilio-signature');
-  const url = request.url;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  
-  if (!signature || !authToken) {
-    return false;
-  }
-  
-  const expectedSignature = crypto
-    .createHmac('sha1', authToken)
-    .update(url + body)
-    .digest('base64');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +16,31 @@ export async function POST(request: NextRequest) {
     
     console.log(`📱 SMS received from ${from}: ${messageBody}`);
     
+    // Create Supabase client
+    const supabase = await createClient();
+    
+    // Rate limiting (simplified for now)
+    const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+    const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+    const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute per phone
+    
+    function checkRateLimit(phoneNumber: string): boolean {
+      const now = Date.now();
+      const record = rateLimitMap.get(phoneNumber);
+      
+      if (!record || now > record.resetTime) {
+        rateLimitMap.set(phoneNumber, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        return true;
+      }
+      
+      if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+        return false;
+      }
+      
+      record.count++;
+      return true;
+    }
+    
     // Rate limiting
     if (!checkRateLimit(phoneNumber)) {
       console.log(`⚠️ Rate limit exceeded for ${phoneNumber}`);
@@ -82,12 +53,6 @@ export async function POST(request: NextRequest) {
         status: 200,
         headers: { 'Content-Type': 'text/xml' },
       });
-    }
-    
-    // Verify Twilio signature (optional but recommended)
-    if (!verifyTwilioSignature(request, body)) {
-      console.log('⚠️ Invalid Twilio signature');
-      // Continue anyway for testing, but log the warning
     }
     
     // Find or create customer
@@ -181,6 +146,11 @@ export async function POST(request: NextRequest) {
       .from('twilio_customers')
       .update({ last_interaction: new Date().toISOString() })
       .eq('id', customer.id);
+    
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
     
     // Use the same sophisticated parsing approach as parseJob
     const prompt = `
@@ -344,7 +314,12 @@ Examples of coordinate extraction:
         const deadlineText = parsed.deadlineDisplay ? ` by ${parsed.deadlineDisplay}` : '';
         const partsText = parsed.parts?.length > 0 ? ` for ${parsed.parts.join(', ')}` : '';
         
-        const successResponse = `Perfect! I've created your delivery job #${job.id.slice(-6)}${partsText}. Pickup: ${parsed.pickup}. Dropoff: ${parsed.dropoff}${deadlineText}. We'll notify you when a driver is assigned.`;
+        let successResponse = `Perfect! I've created your delivery job #${job.id.slice(-6)}${partsText}. Pickup: ${parsed.pickup}. Dropoff: ${parsed.dropoff}${deadlineText}. We'll notify you when a driver is assigned.`;
+        
+        // Add account creation suggestion if job wasn't linked to a user
+        if (!userId) {
+          successResponse += `\n\n💡 To view and manage your jobs online, create an account at https://ganbatte-liart.vercel.app and use this phone number.`;
+        }
         
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -356,30 +331,34 @@ Examples of coordinate extraction:
           headers: { 'Content-Type': 'text/xml' },
         });
       }
+    } else {
+      // Invalid addresses
+      const errorResponse = "I couldn't validate one or both addresses. Please provide clear pickup and dropoff addresses.";
+      
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${errorResponse}</Message>
+</Response>`;
+
+      return new NextResponse(twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
-    // If we don't have both addresses, ask for clarification
-    let clarificationMessage = '';
-    if (!pickupCheck.valid && !dropoffCheck.valid) {
-      clarificationMessage = "I need both pickup and dropoff addresses to create your delivery job. Please provide them clearly.";
-    } else if (!pickupCheck.valid) {
-      clarificationMessage = `I have your dropoff address: ${parsed.dropoff}. Please provide the pickup address.`;
-    } else if (!dropoffCheck.valid) {
-      clarificationMessage = `I have your pickup address: ${parsed.pickup}. Please provide the dropoff address.`;
-    }
-
+  } catch (error) {
+    console.error('🔥 SMS webhook error:', error);
+    
+    const errorResponse = "Sorry, I'm having trouble processing your request. Please try again or contact support.";
+    
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Message>${clarificationMessage}</Message>
+    <Message>${errorResponse}</Message>
 </Response>`;
 
     return new NextResponse(twiml, {
       status: 200,
       headers: { 'Content-Type': 'text/xml' },
     });
-
-  } catch (error) {
-    console.error('Twilio webhook error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
