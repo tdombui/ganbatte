@@ -6,15 +6,15 @@
 
 ## AGREEMENT TO OUR LEGAL TERMS
 
-We are GanbattePM ("Company," "we," "us," "our"), a company registered in California, United States at 201 E Center St, Anaheim, CA 92805.
+We are Zukujet ("Company," "we," "us," "our"), a company registered in California, United States at 201 E Center St, Anaheim, CA 92805.
 
-We operate the website https://ganbatte-liart.vercel.app (the "Site"), the mobile application GanbattePM (the "App"), as well as any other related products and services that refer or link to these legal terms (the "Legal Terms") (collectively, the "Services").
+We operate the website https://zukujet.com (the "Site"), the mobile application Zukujet (the "App"), as well as any other related products and services that refer or link to these legal terms (the "Legal Terms") (collectively, the "Services").
 
 **Last-mile logistics for mission-critical payloads in automotive, aerospace, aviation, marine, and manufacturing. Move payloads by text. AI handles the rest.**
 
-You can contact us by phone at (877) 684-5729, email at support@ganbattepm.com, or by mail to 201 E Center St, Anaheim, CA 92805, United States.
+You can contact us by phone at (877) 684-5729, email at support@zukujet.com, or by mail to 201 E Center St, Anaheim, CA 92805, United States.
 
-These Legal Terms constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you"), and GanbattePM, concerning your access to and use of the Services. You agree that by accessing the Services, you have read, understood, and agreed to be bound by all of these Legal Terms. **IF YOU DO NOT AGREE WITH ALL OF THESE LEGAL TERMS, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SERVICES AND YOU MUST DISCONTINUE USE IMMEDIATELY.**
+These Legal Terms constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you"), and Zukujet, concerning your access to and use of the Services. You agree that by accessing the Services, you have read, understood, and agreed to be bound by all of these Legal Terms. **IF YOU DO NOT AGREE WITH ALL OF THESE LEGAL TERMS, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SERVICES AND YOU MUST DISCONTINUE USE IMMEDIATELY.**
 
 Supplemental terms and conditions or documents that may be posted on the Services from time to time are hereby expressly incorporated herein by reference. We reserve the right, in our sole discretion, to make changes or modifications to these Legal Terms at any time and for any reason. We will alert you about any changes by updating the "Last updated" date of these Legal Terms, and you waive any right to receive specific notice of each such change. It is your responsibility to periodically review these Legal Terms to stay informed of updates. You will be subject to, and will be deemed to have been made aware of and to have accepted, the changes in any revised Legal Terms by your continued use of the Services after the date such revised Legal Terms are posted.
 
@@ -81,7 +81,7 @@ solely for your internal business purpose.
 
 Except as set out in this section or elsewhere in our Legal Terms, no part of the Services and no Content or Marks may be copied, reproduced, aggregated, republished, uploaded, posted, publicly displayed, encoded, translated, transmitted, distributed, sold, licensed, or otherwise exploited for any commercial purpose whatsoever, without our express prior written permission.
 
-If you wish to make any use of the Services, Content, or Marks other than as set out in this section or elsewhere in our Legal Terms, please address your request to: support@ganbattepm.com. If we ever grant you the permission to post, reproduce, or publicly display any part of our Services or Content, you must identify us as the owners or licensors of the Services, Content, or Marks and ensure that any copyright or proprietary notice appears or is visible on posting, reproducing, or displaying our Content.
+If you wish to make any use of the Services, Content, or Marks other than as set out in this section or elsewhere in our Legal Terms, please address your request to: support@zukujet.com. If we ever grant you the permission to post, reproduce, or publicly display any part of our Services or Content, you must identify us as the owners or licensors of the Services, Content, or Marks and ensure that any copyright or proprietary notice appears or is visible on posting, reproducing, or displaying our Content.
 
 We reserve all rights not expressly granted to you in and to the Services, Content, and Marks.
 
@@ -153,7 +153,7 @@ We reserve the right to refuse any order placed through the Services. We may, in
 Contact Sales
 
 ### Cancellation
-You can cancel your subscription at any time by logging into your account. Your cancellation will take effect at the end of the current paid term. If you have any questions or are unsatisfied with our Services, please email us at support@ganbattepm.com.
+You can cancel your subscription at any time by logging into your account. Your cancellation will take effect at the end of the current paid term. If you have any questions or are unsatisfied with our Services, please email us at support@zukujet.com.
 
 ### Fee Changes
 We may, from time to time, make changes to the subscription fee and will communicate any price changes to you in accordance with applicable law.
@@ -245,7 +245,7 @@ We reserve the right, but not the obligation, to: (1) monitor the Services for v
 
 ## 12. PRIVACY POLICY
 
-We care about data privacy and security. Please review our Privacy Policy: https://ganbatte-liart.vercel.app/privacy. By using the Services, you agree to be bound by our Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted in the United States. If you access the Services from any other region of the world with laws or other requirements governing personal data collection, use, or disclosure that differ from applicable laws in the United States, then through your continued use of the Services, you are transferring your data to the United States, and you expressly consent to have your data transferred to and processed in the United States.
+We care about data privacy and security. Please review our Privacy Policy: https://zukujet.com/privacy. By using the Services, you agree to be bound by our Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted in the United States. If you access the Services from any other region of the world with laws or other requirements governing personal data collection, use, or disclosure that differ from applicable laws in the United States, then through your continued use of the Services, you are transferring your data to the United States, and you expressly consent to have your data transferred to and processed in the United States.
 
 ---
 

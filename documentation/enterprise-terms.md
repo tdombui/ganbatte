@@ -97,7 +97,7 @@ This Agreement is governed by the laws of the State of California. Any disputes 
 For questions or concerns, please contact:
 
 **Ganbatte Logistics**  
-[support@ganbattepm.com](mailto:support@ganbattepm.com)
+[support@zukujet.com](mailto:support@zukujet.com)
 
 ---
 

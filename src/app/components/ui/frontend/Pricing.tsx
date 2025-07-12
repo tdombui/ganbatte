@@ -49,7 +49,7 @@ export default function Pricing() {
                             description="For jobs scheduled 24h+ in advance"
                         />
                     </div>
-                    <p className="text-sm text-gray-200 mt-6 drop-shadow-lg">Need bulk or recurring delivery support? <a href="mailto:support@ganbattepm.com" className="underline">Contact us</a>.</p>
+                    <p className="text-sm text-gray-200 mt-6 drop-shadow-lg">Need bulk or recurring delivery support? <a href="mailto:support@zukujet.com" className="underline">Contact us</a>.</p>
                 </div>
             </div>
         </section>

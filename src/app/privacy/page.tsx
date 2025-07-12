@@ -23,8 +23,8 @@ export default function PrivacyPage() {
                         <p className="text-gray-300 text-sm">
                             <strong>Last Updated:</strong> January 2025<br/>
                             <strong>Service Area:</strong> Los Angeles, Orange County, and surrounding areas<br/>
-                            <strong>Data Controller:</strong> GanbattePM<br/>
-                            <strong>Data Protection Officer:</strong> support@ganbattepm.com
+                                                         <strong>Data Controller:</strong> Zukujet<br/>
+                            <strong>Data Protection Officer:</strong> support@zukujet.com
                         </p>
                     </div>
 
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
                             <li>Opt out of SMS notifications by replying &ldquo;STOP&rdquo; to any message</li>
                             <li>Unsubscribe from emails using the link in any email</li>
                             <li>Update communication preferences in your account settings</li>
-                            <li>Request data access or deletion via privacy@ganbattepm.com</li>
+                            <li>Request data access or deletion via privacy@zukujet.com</li>
                         </ul>
                     </section>
 
@@ -200,7 +200,7 @@ export default function PrivacyPage() {
 
                     <section className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">10. Contact Us</h2>
-                        <p className="text-gray-300 mb-3">For privacy-related inquiries regarding Data Protection, California Privacy, or General Support, please reach out to support@ganbattepm.com.</p>
+                        <p className="text-gray-300 mb-3">For privacy-related inquiries regarding Data Protection, California Privacy, or General Support, please reach out to support@zukujet.com.</p>
 
                         <p className="text-gray-300 mb-4">
                             <strong>Response Time:</strong> We will respond to privacy requests within 30 days, or 45 days if additional time is needed.

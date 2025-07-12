@@ -165,7 +165,7 @@ export default function ChatPage() {
             if (response.ok) {
                 setMessages((prev) => [
                     ...prev,
-                    `ai:✅ SMS updates enabled!\n\nYou'll now receive delivery updates, ETA notifications, and job status messages from GanbattePM.\n\nText us anytime at <a href="tel:1-877-684-5729" class="text-emerald-400 hover:text-emerald-300 underline">1(877) 684-5729</a>:\n• "ETA" for delivery updates\n• "NEW" to book another job\n• "STATUS" for current job status\n\nTo stop receiving SMS updates, reply "STOP" to any message.`
+                     `ai:✅ SMS updates enabled!\n\nYou'll now receive delivery updates, ETA notifications, and job status messages from Zukujet.\n\nText us anytime at <a href="tel:1-877-684-5729" class="text-emerald-400 hover:text-emerald-300 underline">1(877) 684-5729</a>:\n• "ETA" for delivery updates\n• "NEW" to book another job\n• "STATUS" for current job status\n\nTo stop receiving SMS updates, reply "STOP" to any message.`
                 ])
                 setSmsOptinMode(false)
                 setSmsConsent(false)
@@ -696,7 +696,7 @@ export default function ChatPage() {
                                                 className="mt-1"
                                             />
                                             <label htmlFor="sms-consent" className="text-sm text-gray-300">
-                                                I agree to receive SMS messages from GanbattePM for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe.
+                                                                                                 I agree to receive SMS messages from Zukujet for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe.
                                             </label>
                                         </div>
                                     </div>

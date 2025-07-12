@@ -83,7 +83,7 @@ Best regards,
 
 [Your Name]  
 Ganbatte Team  
-support@ganbattepm.com
+support@zukujet.com
 
 ---
 

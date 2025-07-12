@@ -11,10 +11,10 @@
 
 ### 2. **Consent Language Next to the Action**
 - ✅ Consent text appears directly next to the checkbox
-- ✅ Language: "I agree to receive SMS messages from GanbattePM for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe."
+- ✅ Language: "I agree to receive SMS messages from Zukujet for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe."
 - ✅ Includes message rate disclosure and STOP instructions
 - ✅ Clear purpose explanation (delivery updates and service notifications)
-- ✅ Branded with "GanbattePM" name
+- ✅ Branded with "Zukujet" name
 
 ### 3. **Links to Privacy Policy and Terms**
 - ✅ Both links visible in footer on all pages
@@ -24,7 +24,7 @@
 
 ### 4. **Purpose and Sender Clarity**
 - ✅ Clear explanation of SMS purpose: "delivery updates and service notifications"
-- ✅ Sender clearly identified: "GanbattePM"
+- ✅ Sender clearly identified: "Zukujet"
 - ✅ Users understand what type of messages they'll receive
 
 ### 5. **Unbundled Consent**
@@ -64,7 +64,7 @@
 ## 🎯 Key Compliance Features
 
 ### Consent Language (Updated):
-"I agree to receive SMS messages from GanbattePM for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe."
+"I agree to receive SMS messages from Zukujet for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe."
 
 ### Message Rate Disclosure:
 "Message & data rates may apply"
@@ -76,7 +76,7 @@
 "delivery updates and service notifications"
 
 ### Sender Identification:
-"GanbattePM"
+"Zukujet"
 
 ## 📸 Screenshots Required for Submission
 

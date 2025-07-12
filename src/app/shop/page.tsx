@@ -21,7 +21,7 @@ export default function ShopPage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-4 font-sans">
-              GanbattePM Shop
+                             Zukujet Shop
             </h1>
             <p className="text-xl text-gray-300 mb-8">
               Official merchandise from the payload movers
@@ -52,7 +52,7 @@ export default function ShopPage() {
               >
                 <Image
                   src="/gradient_box_logo_4.webp"
-                  alt="GanbattePM Bumper Sticker"
+                                     alt="Zukujet Bumper Sticker"
                   width={300}
                   height={150}
                   className="w-full h-auto object-contain drop-shadow-2xl"
@@ -64,10 +64,10 @@ export default function ShopPage() {
               
               <div className="p-6 space-y-4">
                 <h3 className="text-xl font-semibold font-sans">
-                  GanbattePM Bumper Sticker
+                                     Zukujet Bumper Sticker
                 </h3>
                 <p className="text-gray-300 text-sm">
-                  High-quality vinyl bumper sticker featuring the iconic GanbattePM logo
+                                     High-quality vinyl bumper sticker featuring the iconic Zukujet logo
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-lime-400">
@@ -115,7 +115,7 @@ export default function ShopPage() {
           >
             <h2 className="text-2xl font-semibold font-sans">About Our Merchandise</h2>
             <p className="text-gray-300 max-w-2xl mx-auto">
-              All our products are made with premium materials and feature the iconic GanbattePM branding. 
+                             All our products are made with premium materials and feature the iconic Zukujet branding. 
               Show your support for the payload movers with official merchandise.
             </p>
           </motion.div>

@@ -182,7 +182,7 @@ export default function MultiLegForm() {
 
             const data = await res.json()
             if (data?.success) {
-                setToast('SMS opt-in successful! You\'ll now receive delivery updates, ETA notifications, and job status messages from GanbattePM. Redirecting...')
+                                 setToast('SMS opt-in successful! You\'ll now receive delivery updates, ETA notifications, and job status messages from Zukujet. Redirecting...')
                 setTimeout(() => {
                     setSmsOptinMode(false)
                     router.push('/jobs')
@@ -351,7 +351,7 @@ export default function MultiLegForm() {
                                     disabled={loading}
                                 />
                                 <label htmlFor="sms-consent" className="text-sm text-gray-300">
-                                    I agree to receive SMS messages from GanbattePM for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe.
+                                                                         I agree to receive SMS messages from Zukujet for delivery updates and service notifications. Message & data rates may apply. Reply STOP to unsubscribe.
                                 </label>
                             </div>
                             

@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     messages: [
       {
         role: "system",
-        content: "You are GanbattePM delivery service. Help customers with delivery requests. Keep responses under 160 characters."
+        content: "You are Zukujet delivery service. Help customers with delivery requests. Keep responses under 160 characters."
       },
       { role: "user", content: body }
     ],

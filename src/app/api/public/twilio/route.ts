@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
           .update({ sms_opt_in: true })
           .eq('id', customer.id);
         
-        const welcomeMessage = `Welcome to GanbattePM! You're now opted in for delivery services. Send me pickup and dropoff addresses to create a delivery job.`;
+                 const welcomeMessage = `Welcome to Zukujet! You're now opted in for delivery services. Send me pickup and dropoff addresses to create a delivery job.`;
         
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Ask for consent
-        const consentMessage = `Welcome to GanbattePM! Reply YES to receive delivery help via SMS. Reply STOP to opt out.`;
+                 const consentMessage = `Welcome to Zukujet! Reply YES to receive delivery help via SMS. Reply STOP to opt out.`;
         
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

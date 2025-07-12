@@ -37,7 +37,7 @@ export default function EnterpriseTermsPage() {
               </p>
               
               <p className="mb-6">
-                These Enterprise Terms of Service (&ldquo;Agreement&rdquo;) govern the use of Ganbatte Logistics&apos; enterprise delivery services (&ldquo;Services&rdquo;) by business clients (&ldquo;Client&rdquo;) enrolled in our subscription plans (GT Starter, GT Pro, GT Ultra). This Agreement is entered into by and between Ganbatte Logistics (&ldquo;Ganbatte,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) and the Client. By subscribing to a plan or using our Services, you agree to these terms.
+                                 These Enterprise Terms of Service (&ldquo;Agreement&rdquo;) govern the use of Zukujet&apos;s enterprise delivery services (&ldquo;Services&rdquo;) by business clients (&ldquo;Client&rdquo;) enrolled in our subscription plans (GT Starter, GT Pro, GT Ultra). This Agreement is entered into by and between Zukujet (&ldquo;Zukujet,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) and the Client. By subscribing to a plan or using our Services, you agree to these terms.
               </p>
 
               <h3 className="text-xl font-semibold mb-4">1. Services Provided</h3>
@@ -87,7 +87,7 @@ export default function EnterpriseTermsPage() {
               <h3 className="text-xl font-semibold mb-4">7. Liability & Limitations</h3>
               <ul className="list-disc pl-6 mb-6 space-y-2">
                 <li>Ganbatte is not liable for delays due to traffic, weather, acts of God, or other force majeure events.</li>
-                <li>GanbattePM's maximum liability for loss or damage is limited to $100 per job unless otherwise agreed in writing.</li>
+                                 <li>Zukujet&apos;s maximum liability for loss or damage is limited to $100 per job unless otherwise agreed in writing.</li>
                 <li>Ganbatte is not responsible for damage resulting from improper packaging.</li>
               </ul>
 
@@ -99,13 +99,13 @@ export default function EnterpriseTermsPage() {
 
               <h3 className="text-xl font-semibold mb-4">9. Termination</h3>
               <ul className="list-disc pl-6 mb-6 space-y-2">
-                <li>GanbattePM may terminate this Agreement if the Client breaches these terms or engages in abusive, fraudulent, or illegal activity.</li>
+                                 <li>Zukujet may terminate this Agreement if the Client breaches these terms or engages in abusive, fraudulent, or illegal activity.</li>
                 <li>Upon termination, any unused tokens are forfeited.</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-4">10. Amendments</h3>
               <ul className="list-disc pl-6 mb-6 space-y-2">
-                <li>GanbattePM may update this Agreement with 7 days&#39; notice.</li>
+                                 <li>Zukujet may update this Agreement with 7 days&apos; notice.</li>
                 <li>Continued use of the Services after notice constitutes acceptance of the new terms.</li>
               </ul>
 
@@ -117,9 +117,9 @@ export default function EnterpriseTermsPage() {
               <h3 className="text-xl font-semibold mb-4">12. Contact</h3>
               <p className="mb-6">
                 For questions or concerns, please contact:<br />
-                <strong>GanbattePM</strong><br />
-                <a href="mailto:support@ganbattepm.com" className="text-[#7fff00] hover:underline">
-                  support@ganbattepm.com
+                                 <strong>Zukujet</strong><br />
+                <a href="mailto:support@zukujet.com" className="text-[#7fff00] hover:underline">
+                  support@zukujet.com
                 </a>
               </p>
 

@@ -71,7 +71,7 @@ export default function Navbar() {
                         priority
                     />
                     <h1 className="text-[2rem] font-bold font-sans tracking-tight lg:text-[2rem]">
-                        GanbattePM
+                        Zukujet
                     </h1>
                 </Link>
                 

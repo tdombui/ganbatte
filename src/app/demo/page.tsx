@@ -113,7 +113,7 @@ export default function DemoPage() {
                     className="mt-1 h-4 w-4 text-emerald-600 bg-neutral-800 border-neutral-600 rounded focus:ring-emerald-500 focus:ring-2"
                   />
                   <label htmlFor="sms-consent" className="text-sm text-gray-300">
-                    I consent to receive SMS notifications from <strong>GanbattePM</strong> for delivery updates, ETA requests, job status notifications, and service communications. Message frequency varies. Reply &ldquo;STOP&rdquo; to unsubscribe. Message &amp; data rates may apply.
+                     I consent to receive SMS notifications from <strong>Zukujet</strong> for delivery updates, ETA requests, job status notifications, and service communications. Message frequency varies. Reply &ldquo;STOP&rdquo; to unsubscribe. Message &amp; data rates may apply.
                   </label>
                 </div>
                 
@@ -189,7 +189,7 @@ export default function DemoPage() {
                 <strong>Phone:</strong> <a href="tel:1-877-684-5729" className="text-emerald-400 hover:text-emerald-300 underline">1(877) 684-5729</a>
               </div>
               <div>
-                <strong>Email:</strong> <a href="mailto:support@ganbattepm.com" className="text-emerald-400 hover:text-emerald-300 underline">support@ganbattepm.com</a>
+                <strong>Email:</strong> <a href="mailto:support@zukujet.com" className="text-emerald-400 hover:text-emerald-300 underline">support@zukujet.com</a>
               </div>
               <div>
                 <strong>Service Area:</strong> Southern California

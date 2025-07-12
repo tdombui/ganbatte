@@ -16,7 +16,7 @@ export default function About() {
                 <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10 font-sans">
 
                     <p className="text-gray-100 text-lg drop-shadow-lg">
-                        GanbattePM is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
+                                                 Zukujet is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
                     </p>
                     <p className="text-gray-100 text-lg drop-shadow-lg">
                         We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers behind the wheel.                </p>

@@ -38,7 +38,7 @@ export default function StickerProductPage() {
         },
         body: JSON.stringify({
           amount: amount,
-          description: `GanbattePM Bumper Sticker${quantity > 1 ? ` (${quantity}x)` : ''}`,
+                     description: `Zukujet Bumper Sticker${quantity > 1 ? ` (${quantity}x)` : ''}`,
           metadata: { 
             product: 'bumper_sticker',
             quantity: quantity.toString(),
@@ -83,7 +83,7 @@ export default function StickerProductPage() {
             <div className="relative p-2 rounded-xl overflow-hidden max-w-2xl">
               <Image
                 src="/gradient_box_logo_4.webp"
-                alt="GanbattePM Bumper Sticker"
+                                 alt="Zukujet Bumper Sticker"
                 width={800}
                 height={350}
                 className="w-full h-auto object-contain drop-shadow-2xl"
@@ -109,7 +109,7 @@ export default function StickerProductPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <h1 className="text-2xl font-bold text-blue-900 drop-shadow-2xl">GanbattePM Bumper Sticker</h1>
+                         <h1 className="text-2xl font-bold text-blue-900 drop-shadow-2xl">Zukujet Bumper Sticker</h1>
             {/* Price and Quantity on same line */}
             <div className="grid grid-cols-2 gap-18 mb-4 p-6">
               <div className="flex items-center justify-center">
@@ -212,7 +212,7 @@ export default function StickerProductPage() {
             <div className="space-y-4 font-sans">
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Support</h3>
               <div className="space-y-2">
-                <a href="mailto:support@ganbattepm.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
+                <a href="mailto:support@zukujet.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">Help Center</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">FAQ</a>
               </div>
@@ -223,7 +223,7 @@ export default function StickerProductPage() {
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Company</h3>
               <div className="space-y-2">
                 <a href="/about" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
-                <a href="https://www.instagram.com/ganbattepm" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
+                <a href="https://www.instagram.com/zukujet" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
                 <a href="/privacy" className="block text-lime-400 hover:text-white transition-colors font-sans">Privacy Policy</a>
                 <a href="/terms" className="block text-lime-400 hover:text-white transition-colors font-sans">Terms of Service</a>
               </div>
@@ -233,7 +233,7 @@ export default function StickerProductPage() {
           {/* Copyright */}
           <div className=" border-gray-700 pt-[10rem]">
             <p className="text-sm text-lime-400 font-sans">
-              &copy; {new Date().getFullYear()} GanbattePM, All Rights Reserved
+                             &copy; {new Date().getFullYear()} Zukujet, All Rights Reserved
             </p>
           </div>
         </div>

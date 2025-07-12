@@ -409,7 +409,7 @@ No full-time driver? No problem. Our Enterprise Logistics plans are built for bu
             <div className="space-y-4 font-sans">
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Support</h3>
               <div className="space-y-2">
-                <a href="mailto:support@ganbattepm.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
+                <a href="mailto:support@zukujet.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">Help Center</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">FAQ</a>
               </div>
@@ -420,7 +420,7 @@ No full-time driver? No problem. Our Enterprise Logistics plans are built for bu
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Company</h3>
               <div className="space-y-2">
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
-                <a href="https://www.instagram.com/ganbattepm" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
+                <a href="https://www.instagram.com/zukujet" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
                 <a href="/privacy" className="block text-lime-400 hover:text-white transition-colors font-sans">Privacy Policy</a>
                 <a href="/enterprise/terms" className="block text-lime-400 hover:text-white transition-colors font-sans">Enterprise Terms</a>
               </div>

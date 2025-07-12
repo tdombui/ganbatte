@@ -328,7 +328,7 @@ export default function HomePage() {
                   </motion.div>
                 ))}
               </div>
-              <p className="text-sm text-gray-200 mt-8 drop-shadow-lg font-sans">Need recurring logistics support? <a href="mailto:support@ganbattepm.com" className="underline">Contact us</a>.</p>
+              <p className="text-sm text-gray-200 mt-8 drop-shadow-lg font-sans">Need logistics support? <a href="mailto:support@zukujet.com" className="underline">Contact us</a>.</p>
             </div>
           </div>
         </motion.div>
@@ -379,9 +379,9 @@ export default function HomePage() {
       </section>
 
 
-      {/* WHAT IS GANBATTEPM */}
+      {/* WHAT IS ZUKUJET */}
       <section className="font-sans flex flex-col justify-center px-6 py-8 min-h-screen">
-        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">What is GanbattePM?</h2>
+        <h2 className="text-5xl md:text-6xl font-bold text-white drop-shadow-2xl mb-8 text-center font-sans">What is Zukujet?</h2>
         <div className="w-full max-w-6xl mx-auto p-2 md:p-8 rounded-xl relative overflow-hidden">
           <div
             className="w-full h-full p-4 md:p-12 rounded-xl relative text-center"
@@ -392,7 +392,7 @@ export default function HomePage() {
             }}
           >
             <p className="text-lg md:text-xl text-gray-100 mb-4 font-sans drop-shadow-lg">
-              GanbattePM is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
+                             Zukujet is a high-performance last-mile logistics solution for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
             </p>
             <p className="text-lg md:text-xl text-gray-100 mb-4 font-sans drop-shadow-lg">
               We operate throughout Southern California, delivering ultra-responsive service powered by AI-driven dispatch and route optimization—with pro drivers and handlers behind the wheel.
@@ -448,7 +448,7 @@ export default function HomePage() {
             <div className="space-y-4 font-sans">
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Support</h3>
               <div className="space-y-2">
-                <a href="mailto:support@ganbattepm.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
+                <a href="mailto:support@zukujet.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">Help Center</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">FAQ</a>
                 <a href="/shop/sticker" className="block text-lime-400 hover:text-white transition-colors font-sans">Buy a Bumper Sticker</a>
@@ -460,7 +460,7 @@ export default function HomePage() {
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Company</h3>
               <div className="space-y-2">
                 <a href="/about" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
-                <a href="https://www.instagram.com/ganbattepm" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
+                <a href="https://www.instagram.com/zukujet" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
                 <a href="/privacy" className="block text-lime-400 hover:text-white transition-colors font-sans">Privacy Policy</a>
                 <a href="/terms" className="block text-lime-400 hover:text-white transition-colors font-sans">Terms of Service</a>
                 <a href="/driver" className="block text-lime-400 hover:text-white transition-colors font-sans">Join the Team</a>
@@ -471,7 +471,7 @@ export default function HomePage() {
           {/* Copyright */}
           <div className=" border-gray-700 pt-[10rem]">
             <p className="text-sm text-lime-400 font-sans">
-              &copy; {new Date().getFullYear()} GanbattePM, All Rights Reserved
+                             &copy; {new Date().getFullYear()} Zukujet, All Rights Reserved
             </p>
           </div>
         </div>

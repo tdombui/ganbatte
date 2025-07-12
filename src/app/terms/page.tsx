@@ -17,27 +17,27 @@ export default function TermsPage() {
                 <div className="prose prose-invert max-w-none">
                     <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-8">
                         <p className="text-gray-300 text-sm">
-                            <strong>Company:</strong> GanbattePM<br/>
+                                                         <strong>Company:</strong> Zukujet<br/>
                             <strong>Address:</strong> 201 E Center St, Anaheim, CA 92805<br/>
                             <strong>Phone:</strong> (877) 684-5729
                             <br/>
-                            <strong>Email:</strong> support@ganbattepm.com
+                            <strong>Email:</strong> support@zukujet.com
                         </p>
                     </div>
 
                     <section className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">Agreement to Our Legal Terms</h2>
                         <p className="text-gray-300 mb-4">
-                            We are GanbattePM (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; &ldquo;our&rdquo;), a company registered in California, United States at 201 E Center St, Anaheim, CA 92805.
+                                                         We are Zukujet (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; &ldquo;our&rdquo;), a company registered in California, United States at 201 E Center St, Anaheim, CA 92805.
                         </p>
                         <p className="text-gray-300 mb-4">
-                            We operate the website https://ganbatte-liart.vercel.app (the &ldquo;Site&rdquo;), the mobile application GanbattePM (the &ldquo;App&rdquo;), as well as any other related products and services that refer or link to these legal terms (the &ldquo;Legal Terms&rdquo;) (collectively, the &ldquo;Services&rdquo;).
+                             We operate the website https://zukujet.com (the &ldquo;Site&rdquo;), the mobile application Zukujet (the &ldquo;App&rdquo;), as well as any other related products and services that refer or link to these legal terms (the &ldquo;Legal Terms&rdquo;) (collectively, the &ldquo;Services&rdquo;).
                         </p>
                         <p className="text-gray-300 mb-6">
                             Last-mile logistics for mission-critical payloads in automotive, aerospace, aviation, marine, and manufacturing. Move payloads by text. AI handles the rest.
                         </p>
                         <p className="text-gray-300 mb-6">
-                            These Legal Terms constitute a legally binding agreement made between you, whether personally or on behalf of an entity (&ldquo;you&rdquo;), and GanbattePM, concerning your access to and use of the Services. You agree that by accessing the Services, you have read, understood, and agreed to be bound by all of these Legal Terms. IF YOU DO NOT AGREE WITH ALL OF THESE LEGAL TERMS, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SERVICES AND YOU MUST DISCONTINUE USE IMMEDIATELY.
+                             These Legal Terms constitute a legally binding agreement made between you, whether personally or on behalf of an entity (&ldquo;you&rdquo;), and Zukujet, concerning your access to and use of the Services. You agree that by accessing the Services, you have read, understood, and agreed to be bound by all of these Legal Terms. IF YOU DO NOT AGREE WITH ALL OF THESE LEGAL TERMS, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SERVICES AND YOU MUST DISCONTINUE USE IMMEDIATELY.
                         </p>
                     </section>
 
@@ -130,7 +130,7 @@ export default function TermsPage() {
                         <h2 className="text-2xl font-semibold mb-4">6. Subscriptions</h2>
                         <h3 className="text-lg font-semibold mb-2">Cancellation</h3>
                         <p className="text-gray-300 mb-4">
-                            You can cancel your subscription at any time by logging into your account. Your cancellation will take effect at the end of the current paid term. If you have any questions or are unsatisfied with our Services, please email us at support@ganbattepm.com.
+                            You can cancel your subscription at any time by logging into your account. Your cancellation will take effect at the end of the current paid term. If you have any questions or are unsatisfied with our Services, please email us at support@zukujet.com.
                         </p>
                         <h3 className="text-lg font-semibold mb-2">Fee Changes</h3>
                         <p className="text-gray-300 mb-6">
@@ -187,7 +187,7 @@ export default function TermsPage() {
                     <section id="privacy-policy" className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">12. Privacy Policy</h2>
                         <p className="text-gray-300 mb-6">
-                            We care about data privacy and security. Please review our Privacy Policy: https://ganbatte-liart.vercel.app/privacy. By using the Services, you agree to be bound by our Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted in the United States. If you access the Services from any other region of the world with laws or other requirements governing personal data collection, use, or disclosure that differ from applicable laws in the United States, then through your continued use of the Services, you are transferring your data to the United States, and you expressly consent to have your data transferred to and processed in the United States.
+                            We care about data privacy and security. Please review our Privacy Policy: https://zukujet.com/privacy. By using the Services, you agree to be bound by our Privacy Policy, which is incorporated into these Legal Terms. Please be advised the Services are hosted in the United States. If you access the Services from any other region of the world with laws or other requirements governing personal data collection, use, or disclosure that differ from applicable laws in the United States, then through your continued use of the Services, you are transferring your data to the United States, and you expressly consent to have your data transferred to and processed in the United States.
                         </p>
                     </section>
 
@@ -289,7 +289,7 @@ export default function TermsPage() {
                         </p>
                         <h3 className="text-lg font-semibold mb-2">Support</h3>
                         <p className="text-gray-300 mb-6">
-                            If you have any questions or need assistance regarding our SMS communications, please email us at support@ganbattepm.com or call at (877) 684-5729.
+                            If you have any questions or need assistance regarding our SMS communications, please email us at support@zukujet.com or call at (877) 684-5729.
                         </p>
                     </section>
 
@@ -314,13 +314,13 @@ export default function TermsPage() {
                         </p>
                         <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-6">
                             <p className="text-gray-300">
-                                <strong>GanbattePM</strong><br/>
+                                                                 <strong>Zukujet</strong><br/>
                                 201 E Center St<br/>
                                 Anaheim, CA 92805<br/>
                                 United States<br/>
                                 <strong>Phone:</strong> (877) 684-5729
                                 <br/>
-                                <strong>Email:</strong> support@ganbattepm.com
+                                <strong>Email:</strong> support@zukujet.com
                             </p>
                         </div>
                     </section>

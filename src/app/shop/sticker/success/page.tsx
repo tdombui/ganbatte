@@ -42,7 +42,7 @@ function StickerSuccessContent() {
               Thank You!
             </h1>
             <p className="text-xl text-gray-300">
-              Your GanbattePM bumper sticker order has been confirmed.
+                             Your Zukujet bumper sticker order has been confirmed.
             </p>
           </motion.div>
 
@@ -55,7 +55,7 @@ function StickerSuccessContent() {
           >
             <h2 className="text-2xl font-semibold font-sans">Order Details</h2>
             <div className="text-left space-y-2 text-gray-300">
-              <p><span className="font-medium">Product:</span> GanbattePM Bumper Sticker</p>
+                             <p><span className="font-medium">Product:</span> Zukujet Bumper Sticker</p>
               <p><span className="font-medium">Status:</span> <span className="text-lime-400">Confirmed</span></p>
               {sessionId && (
                 <p><span className="font-medium">Order ID:</span> {sessionId}</p>
@@ -109,8 +109,8 @@ function StickerSuccessContent() {
           >
             <p>
               Questions about your order? Contact us at{' '}
-              <a href="mailto:support@ganbattepm.com" className="text-lime-400 hover:text-lime-300">
-                support@ganbattepm.com
+              <a href="mailto:support@zukujet.com" className="text-lime-400 hover:text-lime-300">
+                support@zukujet.com
               </a>
             </p>
           </motion.div>

@@ -106,7 +106,7 @@ export default function PrivacyPolicy() {
                                 <h3 className="text-xl font-semibold mb-3">9. Contact Us</h3>
                                 <p className="text-gray-300 mb-3">For privacy-related inquiries, please reach out via:</p>
                                 <ul className="list-disc list-inside text-gray-300 mb-6 space-y-1">
-                                    <li><strong>Email:</strong> support@ganbattepm.com</li>
+                                    <li><strong>Email:</strong> support@zukujet.com</li>
                                     <li><strong>Contact Form:</strong> Available through our platform</li>
                                 </ul>
 

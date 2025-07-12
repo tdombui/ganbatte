@@ -20,7 +20,7 @@ export default function AboutPage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-6 font-sans">
-              About GanbattePM
+                             About Zukujet
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
               Last-mile logistics for mission-critical payloads across automotive, aerospace, aviation, marine, and manufacturing.
@@ -163,7 +163,7 @@ export default function AboutPage() {
                   <div className="space-y-2 text-gray-300">
                     <p><strong>Address:</strong> 201 E Center St, Anaheim, CA 92805</p>
                     <p><strong>Phone:</strong> (877) 684-5729</p>
-                    <p><strong>Email:</strong> support@ganbattepm.com</p>
+                    <p><strong>Email:</strong> support@zukujet.com</p>
                   </div>
                 </div>
                 <div>
@@ -230,7 +230,7 @@ export default function AboutPage() {
             <div className="space-y-4 font-sans">
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Support</h3>
               <div className="space-y-2">
-                <a href="mailto:support@ganbattepm.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
+                <a href="mailto:support@zukujet.com" className="block text-lime-400 hover:text-white transition-colors font-sans">Contact Us</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">Help Center</a>
                 <a href="#" className="block text-lime-400 hover:text-white transition-colors font-sans">FAQ</a>
                 <a href="/shop/sticker" className="block text-lime-400 hover:text-white transition-colors font-sans">Buy a Bumper Sticker</a>
@@ -242,7 +242,7 @@ export default function AboutPage() {
               <h3 className="text-xl font-bold text-lime-400 drop-shadow-lg font-sans">Company</h3>
               <div className="space-y-2">
                 <a href="/about" className="block text-lime-400 hover:text-white transition-colors font-sans">About</a>
-                <a href="https://www.instagram.com/ganbattepm" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
+                <a href="https://www.instagram.com/zukujet" className="block text-lime-400 hover:text-white transition-colors font-sans">Instagram</a>
                 <a href="/privacy" className="block text-lime-400 hover:text-white transition-colors font-sans">Privacy Policy</a>
                 <a href="/terms" className="block text-lime-400 hover:text-white transition-colors font-sans">Terms of Service</a>
                 <a href="/driver" className="block text-lime-400 hover:text-white transition-colors font-sans">Join the Team</a>
@@ -253,7 +253,7 @@ export default function AboutPage() {
           {/* Copyright */}
           <div className="border-gray-700 pt-[10rem]">
             <p className="text-sm text-lime-400 font-sans">
-              &copy; {new Date().getFullYear()} GanbattePM, All Rights Reserved
+                             &copy; {new Date().getFullYear()} Zukujet, All Rights Reserved
             </p>
           </div>
         </div>

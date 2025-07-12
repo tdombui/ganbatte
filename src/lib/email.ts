@@ -95,9 +95,9 @@ export const sendInvoiceEmail = async ({
             </div>
             
             <div class="footer">
-              <p>GanbattePM<br>
+                             <p>Zukujet<br>
               201 E Center St, Anaheim, CA 92805<br>
-              support@ganbattepm.com</p>
+              support@zukujet.com</p>
             </div>
           </div>
         </body>
