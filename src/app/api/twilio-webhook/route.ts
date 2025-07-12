@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { OpenAI } from 'openai';
 import { validateAddress } from '@/lib/validateAddress';
 import { normalizeDeadline } from '@/lib/normalizeDeadline';
@@ -15,9 +15,6 @@ export async function POST(request: NextRequest) {
     const phoneNumber = from.replace('+', '');
     
     console.log(`📱 SMS received from ${from}: ${messageBody}`);
-    
-    // Create Supabase client
-    const supabase = await createClient();
     
     // Rate limiting (simplified for now)
     const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -56,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Find or create customer
-    let { data: customer, error: customerError } = await supabase
+    let { data: customer, error: customerError } = await supabaseAdmin
       .from('twilio_customers')
       .select('*')
       .eq('phone_number', phoneNumber)
@@ -64,32 +61,47 @@ export async function POST(request: NextRequest) {
     
     if (customerError && customerError.code === 'PGRST116') {
       // Customer doesn't exist, create one
-      const { data: newCustomer, error: createError } = await supabase
+      console.log(`🔍 Creating new twilio_customer for phone: ${phoneNumber}`);
+      
+      const { data: newCustomer, error: createError } = await supabaseAdmin
         .from('twilio_customers')
         .insert({
           phone_number: phoneNumber,
           name: 'SMS Customer',
-          sms_opt_in: false
+          sms_opt_in: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_active: true,
+          last_interaction: new Date().toISOString()
         })
         .select()
         .single();
       
       if (createError) {
-        console.error('Error creating customer:', createError);
+        console.error('❌ Error creating customer:', createError);
+        console.error('❌ Error details:', {
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+          code: createError.code
+        });
         return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 });
       }
       
       customer = newCustomer;
+      console.log(`✅ Created new customer: ${customer.id}`);
     } else if (customerError) {
-      console.error('Error finding customer:', customerError);
+      console.error('❌ Error finding customer:', customerError);
       return NextResponse.json({ error: 'Failed to find customer' }, { status: 500 });
+    } else {
+      console.log(`✅ Found existing customer: ${customer.id}`);
     }
     
     // Handle consent flow
     if (!customer.sms_opt_in) {
       if (messageBody.toLowerCase().trim() === 'yes') {
         // Opt in
-        await supabase
+        await supabaseAdmin
           .from('twilio_customers')
           .update({ sms_opt_in: true })
           .eq('id', customer.id);
@@ -123,7 +135,7 @@ export async function POST(request: NextRequest) {
     
     // Handle STOP command for opted-in customers
     if (messageBody.toLowerCase().trim() === 'stop') {
-      await supabase
+      await supabaseAdmin
         .from('twilio_customers')
         .update({ sms_opt_in: false })
         .eq('id', customer.id);
@@ -142,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Update last interaction
-    await supabase
+    await supabaseAdmin
       .from('twilio_customers')
       .update({ last_interaction: new Date().toISOString() })
       .eq('id', customer.id);
@@ -247,7 +259,7 @@ Examples of coordinate extraction:
       
       if (customer.email) {
         // Check if there's a profile with this email
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error: profileError } = await supabaseAdmin
           .from('profiles')
           .select('id, role')
           .eq('email', customer.email)
@@ -265,7 +277,7 @@ Examples of coordinate extraction:
       
       // If no match by email, try to find by phone number directly
       if (!userId) {
-        const { data: profileByPhone, error: phoneError } = await supabase
+        const { data: profileByPhone, error: phoneError } = await supabaseAdmin
           .from('profiles')
           .select('id, role')
           .eq('phone', phoneNumber)
@@ -281,7 +293,7 @@ Examples of coordinate extraction:
       }
       
       // Create the job with user linking if found
-      const { data: job, error: jobError } = await supabase
+      const { data: job, error: jobError } = await supabaseAdmin
         .from('jobs')
         .insert({
           customer_id: customerId,
@@ -297,7 +309,7 @@ Examples of coordinate extraction:
         .single();
 
       if (jobError) {
-        console.error('Error creating job:', jobError);
+        console.error('❌ Error creating job:', jobError);
         const errorResponse = "Sorry, I couldn't create your job. Please try again or contact support.";
         
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
